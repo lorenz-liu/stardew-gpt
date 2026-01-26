@@ -1,0 +1,10 @@
+{
+  "tab.name": "AI Assistant",
+  "tab.title": "Stardew Valley AI Assistant",
+  "chat.welcome": "Hello! I'm an old farmer who knows everything about Stardew Valley. Ask me anything about farming, villagers, or the valley!",
+  "chat.thinking": "Thinking...",
+  "chat.send": "Send",
+  "chat.placeholder": "Ask me about Stardew Valley...",
+  "error.non_stardew": "I'm just an old farmer from Stardew Valley, I don't understand things outside the village... You should ask city folks about that.",
+  "error.api": "Sorry, I'm having trouble thinking right now. Please try again later."
+}

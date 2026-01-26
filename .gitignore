@@ -1,0 +1,28 @@
+## Build results
+bin/
+obj/
+*.dll
+*.pdb
+
+## Visual Studio
+.vs/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+## Rider
+.idea/
+*.sln.iml
+
+## Config files with API keys
+config.json
+
+## OS files
+.DS_Store
+Thumbs.db
+
+## Temporary files
+*.tmp
+*.temp
+*.log

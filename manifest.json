@@ -1,0 +1,11 @@
+{
+  "Name": "Stardew GPT",
+  "Author": "Lorenz Liu",
+  "Version": "1.0.0",
+  "Description": "An AI assistant for Stardew Valley that answers questions about the game using RAG and DeepSeek.",
+  "UniqueID": "LorenzLiu.StardewGPT",
+  "EntryDll": "StardewGPT.dll",
+  "MinimumApiVersion": "3.18.0",
+  "UpdateKeys": [],
+  "Dependencies": []
+}
