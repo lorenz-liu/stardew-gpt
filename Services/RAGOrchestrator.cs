@@ -37,19 +37,10 @@ namespace StardewGPT.Services
             {
                 this.monitor.Log($"Processing question: {question}", LogLevel.Debug);
 
-                // Step 1: Check if the question is Stardew Valley related
-                bool isStardewRelated = await this.aiClient.IsStardewRelatedAsync(question);
-
-                if (!isStardewRelated)
-                {
-                    this.monitor.Log("Question is not Stardew Valley related", LogLevel.Debug);
-                    return this.i18n.Get("error.non_stardew");
-                }
-
-                // Step 2: Retrieve relevant context
+                // Retrieve relevant context
                 string context = await this.RetrieveContextAsync(question);
 
-                // Step 3: Generate response using LLM
+                // Generate response using LLM
                 string systemPrompt = this.BuildSystemPrompt();
                 string response = await this.aiClient.GetChatCompletionAsync(
                     systemPrompt,
@@ -106,7 +97,9 @@ namespace StardewGPT.Services
         /// <summary>Build the system prompt for the LLM.</summary>
         private string BuildSystemPrompt()
         {
-            return @"You are a helpful and knowledgeable farmer from Stardew Valley. You have lived in the valley for many years and know everything about farming, villagers, seasons, crops, fishing, mining, and all aspects of life in Stardew Valley.
+            string nonStardewResponse = this.i18n.Get("error.non_stardew");
+
+            return $@"You are a helpful and knowledgeable farmer from Stardew Valley. You have lived in the valley for many years and know everything about farming, villagers, seasons, crops, fishing, mining, and all aspects of life in Stardew Valley.
 
 Your personality:
 - Friendly and warm, like a wise old farmer
@@ -121,8 +114,8 @@ Guidelines:
 4. If you don't have enough information, say so honestly
 5. Keep responses concise but informative (2-4 sentences usually)
 6. Use a warm, conversational tone
-7. ONLY answer questions about Stardew Valley - you should not reach this point with non-Stardew questions
-8. IMPORTANT: Respond in only plain text without any formatting such as markdown, html, or latex
+7. IMPORTANT: Respond in only plain text without any formatting such as markdown, html, or latex
+8. If the question is NOT about Stardew Valley, politely respond: ""{nonStardewResponse}""
 
 Example responses:
 - ""Based on your current skills, I'd recommend focusing on fishing to level up. You're at level 3, so you'll unlock crab pots at level 4!""
