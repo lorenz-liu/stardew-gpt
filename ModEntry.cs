@@ -91,16 +91,19 @@ namespace StardewGPT
         /// <summary>Raised after the player presses a button on the keyboard, controller, or mouse.</summary>
         private void OnButtonPressed(object? sender, ButtonPressedEventArgs e)
         {
+            // Suppress ALL input if chat menu is open, EXCEPT ESC (to close) and Enter (to send)
+            if (Game1.activeClickableMenu is ChatTab)
+            {
+                if (e.Button != SButton.Escape && e.Button != SButton.Enter)
+                {
+                    this.Helper!.Input.Suppress(e.Button);
+                }
+                return;
+            }
+
             // Check if player pressed the configured key to open chat
             if (!Context.IsWorldReady || !Context.IsPlayerFree)
                 return;
-
-            // Suppress input if chat menu is open
-            if (Game1.activeClickableMenu is ChatTab)
-            {
-                this.Helper!.Input.Suppress(e.Button);
-                return;
-            }
 
             if (e.Button == this.Config!.OpenChatKey)
             {
