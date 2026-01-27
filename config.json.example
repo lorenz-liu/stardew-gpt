@@ -1,0 +1,7 @@
+{
+  "ApiEndpoint": "https://api.deepseek.com/v1/chat/completions",
+  "ApiKey": "your-api-key-here",
+  "Model": "deepseek-chat",
+  "MaxTokens": 500,
+  "Temperature": 0.7
+}

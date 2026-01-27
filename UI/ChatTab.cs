@@ -100,16 +100,26 @@ namespace StardewGPT.UI
 
             try
             {
-                // TODO: Call RAG system here
-                // For now, just show a placeholder response
-                await System.Threading.Tasks.Task.Delay(1000); // Simulate API call
+                // Call RAG system to process the question
+                if (ModEntry.RagOrchestrator != null)
+                {
+                    string response = await ModEntry.RagOrchestrator.ProcessQuestionAsync(message);
 
-                // Remove loading message
-                this.chatHistory.RemoveAt(this.chatHistory.Count - 1);
+                    // Remove loading message
+                    this.chatHistory.RemoveAt(this.chatHistory.Count - 1);
 
-                // Add AI response
-                string response = "This is a placeholder response. RAG system will be implemented next.";
-                this.AddMessage(response, isUser: false);
+                    // Add AI response
+                    this.AddMessage(response, isUser: false);
+                }
+                else
+                {
+                    // Remove loading message
+                    this.chatHistory.RemoveAt(this.chatHistory.Count - 1);
+
+                    // Show error if RAG system is not initialized
+                    this.AddMessage("RAG system not initialized. Please check your configuration.", isUser: false);
+                    ModEntry.ModMonitor?.Log("RAG orchestrator is null", StardewModdingAPI.LogLevel.Error);
+                }
             }
             catch (Exception ex)
             {
