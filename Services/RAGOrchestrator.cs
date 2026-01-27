@@ -8,20 +8,20 @@ namespace StardewGPT.Services
     /// <summary>Orchestrates the RAG (Retrieval-Augmented Generation) system.</summary>
     public class RAGOrchestrator
     {
-        private readonly DeepSeekClient deepSeekClient;
+        private readonly AIClient aiClient;
         private readonly GameDataExtractor gameDataExtractor;
         private readonly WikiDataLoader wikiDataLoader;
         private readonly IMonitor monitor;
         private readonly ITranslationHelper i18n;
 
         public RAGOrchestrator(
-            DeepSeekClient deepSeekClient,
+            AIClient aiClient,
             GameDataExtractor gameDataExtractor,
             WikiDataLoader wikiDataLoader,
             IMonitor monitor,
             ITranslationHelper i18n)
         {
-            this.deepSeekClient = deepSeekClient;
+            this.aiClient = aiClient;
             this.gameDataExtractor = gameDataExtractor;
             this.wikiDataLoader = wikiDataLoader;
             this.monitor = monitor;
@@ -38,7 +38,7 @@ namespace StardewGPT.Services
                 this.monitor.Log($"Processing question: {question}", LogLevel.Debug);
 
                 // Step 1: Check if the question is Stardew Valley related
-                bool isStardewRelated = await this.deepSeekClient.IsStardewRelatedAsync(question);
+                bool isStardewRelated = await this.aiClient.IsStardewRelatedAsync(question);
 
                 if (!isStardewRelated)
                 {
@@ -51,7 +51,7 @@ namespace StardewGPT.Services
 
                 // Step 3: Generate response using LLM
                 string systemPrompt = this.BuildSystemPrompt();
-                string response = await this.deepSeekClient.GetChatCompletionAsync(
+                string response = await this.aiClient.GetChatCompletionAsync(
                     systemPrompt,
                     question,
                     context

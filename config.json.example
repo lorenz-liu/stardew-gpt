@@ -1,7 +1,8 @@
 {
-  "ApiEndpoint": "https://api.deepseek.com/v1/chat/completions",
-  "ApiKey": "your-api-key-here",
-  "Model": "deepseek-chat",
+  "ApiEndpoint": "https://api.groq.com/openai/v1/chat/completions",
+  "ApiKey": "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",
+  "Model": "openai/gpt-oss-120b",
   "MaxTokens": 500,
-  "Temperature": 0.7
+  "Temperature": 0.7,
+  "OpenChatKey": "K"
 }

@@ -17,7 +17,7 @@ namespace StardewGPT
         internal static ITranslationHelper? I18n;
         internal static RAGOrchestrator? RagOrchestrator;
 
-        private DeepSeekClient? deepSeekClient;
+        private AIClient? aiClient;
         private GameDataExtractor? gameDataExtractor;
         private WikiDataLoader? wikiDataLoader;
 
@@ -50,13 +50,13 @@ namespace StardewGPT
                 this.Monitor.Log("Initializing RAG system...", LogLevel.Info);
 
                 // Create service instances
-                this.deepSeekClient = new DeepSeekClient(this.Config!, this.Monitor);
+                this.aiClient = new AIClient(this.Config!, this.Monitor);
                 this.gameDataExtractor = new GameDataExtractor(this.Monitor);
                 this.wikiDataLoader = new WikiDataLoader(this.Monitor, this.Helper.DirectoryPath);
 
                 // Create RAG orchestrator
                 RagOrchestrator = new RAGOrchestrator(
-                    this.deepSeekClient,
+                    this.aiClient,
                     this.gameDataExtractor,
                     this.wikiDataLoader,
                     this.Monitor,

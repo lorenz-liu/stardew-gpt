@@ -8,14 +8,14 @@ using StardewModdingAPI;
 
 namespace StardewGPT.Services
 {
-    /// <summary>Client for communicating with DeepSeek API.</summary>
-    public class DeepSeekClient
+    /// <summary>Client for communicating with LLM API (Groq/OpenAI compatible).</summary>
+    public class AIClient
     {
         private readonly HttpClient httpClient;
         private readonly ModConfig config;
         private readonly IMonitor monitor;
 
-        public DeepSeekClient(ModConfig config, IMonitor monitor)
+        public AIClient(ModConfig config, IMonitor monitor)
         {
             this.config = config;
             this.monitor = monitor;
@@ -25,7 +25,7 @@ namespace StardewGPT.Services
             };
         }
 
-        /// <summary>Send a chat completion request to DeepSeek.</summary>
+        /// <summary>Send a chat completion request to the LLM API.</summary>
         /// <param name="systemPrompt">The system prompt to set context.</param>
         /// <param name="userMessage">The user's message.</param>
         /// <param name="context">Optional context from RAG retrieval.</param>
@@ -50,11 +50,12 @@ namespace StardewGPT.Services
                     },
                     max_tokens = this.config.MaxTokens,
                     temperature = this.config.Temperature,
+                    reasoning_effort = this.config.ReasoningEffort,
                     stream = false
                 };
 
                 string jsonRequest = JsonConvert.SerializeObject(requestBody);
-                this.monitor.Log($"Sending request to DeepSeek API", LogLevel.Debug);
+                this.monitor.Log($"Sending request to API", LogLevel.Debug);
 
                 // Create HTTP request
                 var request = new HttpRequestMessage(HttpMethod.Post, this.config.ApiEndpoint)
@@ -69,7 +70,7 @@ namespace StardewGPT.Services
 
                 if (!response.IsSuccessStatusCode)
                 {
-                    this.monitor.Log($"DeepSeek API error: {response.StatusCode} - {responseContent}", LogLevel.Error);
+                    this.monitor.Log($"API error: {response.StatusCode} - {responseContent}", LogLevel.Error);
                     throw new Exception($"API request failed: {response.StatusCode}");
                 }
 
@@ -82,12 +83,12 @@ namespace StardewGPT.Services
                     throw new Exception("Empty response from API");
                 }
 
-                this.monitor.Log($"Received response from DeepSeek API", LogLevel.Debug);
+                this.monitor.Log($"Received response from API", LogLevel.Debug);
                 return aiResponse;
             }
             catch (Exception ex)
             {
-                this.monitor.Log($"Error calling DeepSeek API: {ex.Message}", LogLevel.Error);
+                this.monitor.Log($"Error calling API: {ex.Message}", LogLevel.Error);
                 throw;
             }
         }
