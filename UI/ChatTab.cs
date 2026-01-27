@@ -16,7 +16,6 @@ namespace StardewGPT.UI
         private readonly TextBox inputTextBox;
         private readonly ClickableTextureComponent sendButton;
         private readonly List<ChatMessage> chatHistory;
-        private readonly int maxVisibleMessages = 8;
         private int scrollOffset = 0;
         private bool isWaitingForResponse = false;
 
@@ -24,8 +23,8 @@ namespace StardewGPT.UI
         private const int Padding = 32;
         private const int InputBoxHeight = 48;
         private const int ButtonWidth = 100;
-        private const int MessageSpacing = 16;
-        private const int MessageHeight = 80;
+        private const int MessageSpacing = 12;
+        private const int MessagePadding = 12;
 
         public ChatTab(int xPositionOnScreen, int yPositionOnScreen, int width, int height)
             : base(xPositionOnScreen, yPositionOnScreen, width, height, showUpperRightCloseButton: true)
@@ -83,7 +82,9 @@ namespace StardewGPT.UI
             });
 
             // Auto-scroll to bottom
-            this.scrollOffset = Math.Max(0, this.chatHistory.Count - this.maxVisibleMessages);
+            int totalHeight = this.CalculateTotalMessagesHeight();
+            int messageAreaHeight = this.height - Padding * 2 - InputBoxHeight - MessageSpacing;
+            this.scrollOffset = Math.Max(0, totalHeight - messageAreaHeight);
         }
 
         /// <summary>Handle sending a message.</summary>
@@ -172,16 +173,17 @@ namespace StardewGPT.UI
             base.receiveScrollWheelAction(direction);
 
             // Scroll chat history
+            int totalHeight = this.CalculateTotalMessagesHeight();
+            int messageAreaHeight = this.height - Padding * 2 - InputBoxHeight - MessageSpacing;
+            int maxScroll = Math.Max(0, totalHeight - messageAreaHeight);
+
             if (direction > 0)
             {
-                this.scrollOffset = Math.Max(0, this.scrollOffset - 1);
+                this.scrollOffset = Math.Max(0, this.scrollOffset - 40);
             }
             else if (direction < 0)
             {
-                this.scrollOffset = Math.Min(
-                    Math.Max(0, this.chatHistory.Count - this.maxVisibleMessages),
-                    this.scrollOffset + 1
-                );
+                this.scrollOffset = Math.Min(maxScroll, this.scrollOffset + 40);
             }
         }
 
@@ -198,50 +200,79 @@ namespace StardewGPT.UI
             );
 
             // Draw chat messages
-            int messageY = this.yPositionOnScreen + Padding;
-            int messageAreaHeight = this.height - Padding * 2 - InputBoxHeight;
-            int visibleMessages = Math.Min(this.maxVisibleMessages, this.chatHistory.Count);
+            int messageAreaX = this.xPositionOnScreen + Padding;
+            int messageAreaY = this.yPositionOnScreen + Padding;
+            int messageAreaWidth = this.width - Padding * 2;
+            int messageAreaHeight = this.height - Padding * 2 - InputBoxHeight - MessageSpacing;
+            int bubbleMaxWidth = messageAreaWidth / 2 - MessageSpacing;
 
-            for (int i = 0; i < visibleMessages; i++)
+            // Create a scissor rectangle to clip messages outside the area
+            Rectangle scissorRect = new Rectangle(
+                messageAreaX,
+                messageAreaY,
+                messageAreaWidth,
+                messageAreaHeight
+            );
+
+            var originalScissorRect = b.GraphicsDevice.ScissorRectangle;
+            var originalRasterizerState = b.GraphicsDevice.RasterizerState;
+
+            b.End();
+            b.Begin(SpriteSortMode.Deferred, BlendState.AlphaBlend, SamplerState.PointClamp, null, new RasterizerState { ScissorTestEnable = true });
+            b.GraphicsDevice.ScissorRectangle = scissorRect;
+
+            int currentY = messageAreaY - this.scrollOffset;
+
+            foreach (var message in this.chatHistory)
             {
-                int messageIndex = this.scrollOffset + i;
-                if (messageIndex >= this.chatHistory.Count)
-                    break;
+                // Calculate message dimensions
+                string wrappedText = this.WrapText(message.Text, bubbleMaxWidth - MessagePadding * 2, Game1.smallFont);
+                Vector2 textSize = Game1.smallFont.MeasureString(wrappedText);
+                int bubbleHeight = (int)textSize.Y + MessagePadding * 2;
+                int bubbleWidth = Math.Min(bubbleMaxWidth, (int)textSize.X + MessagePadding * 2);
 
-                var message = this.chatHistory[messageIndex];
-                int currentY = messageY + i * (MessageHeight + MessageSpacing);
-
-                // Draw message bubble
-                Color bubbleColor = message.IsUser ? new Color(100, 150, 255, 200) : new Color(200, 200, 200, 200);
+                // Position bubble (user messages on right, AI on left)
                 int bubbleX = message.IsUser
-                    ? this.xPositionOnScreen + this.width / 2
-                    : this.xPositionOnScreen + Padding;
-                int bubbleWidth = this.width / 2 - Padding * 2;
+                    ? messageAreaX + messageAreaWidth - bubbleWidth
+                    : messageAreaX;
 
-                // Draw bubble background
-                IClickableMenu.drawTextureBox(
-                    b,
-                    Game1.menuTexture,
-                    new Rectangle(0, 256, 60, 60),
-                    bubbleX,
-                    currentY,
-                    bubbleWidth,
-                    MessageHeight,
-                    bubbleColor,
-                    1f,
-                    false
-                );
+                // Only draw if visible in the message area
+                if (currentY + bubbleHeight > messageAreaY && currentY < messageAreaY + messageAreaHeight)
+                {
+                    // Draw bubble background
+                    Color bubbleColor = message.IsUser
+                        ? new Color(100, 150, 255, 200)
+                        : new Color(200, 200, 200, 200);
 
-                // Draw message text (word-wrapped)
-                string wrappedText = this.WrapText(message.Text, bubbleWidth - 16, Game1.smallFont);
-                Utility.drawTextWithShadow(
-                    b,
-                    wrappedText,
-                    Game1.smallFont,
-                    new Vector2(bubbleX + 8, currentY + 8),
-                    Game1.textColor
-                );
+                    IClickableMenu.drawTextureBox(
+                        b,
+                        Game1.menuTexture,
+                        new Rectangle(0, 256, 60, 60),
+                        bubbleX,
+                        currentY,
+                        bubbleWidth,
+                        bubbleHeight,
+                        bubbleColor,
+                        1f,
+                        false
+                    );
+
+                    // Draw message text
+                    Utility.drawTextWithShadow(
+                        b,
+                        wrappedText,
+                        Game1.smallFont,
+                        new Vector2(bubbleX + MessagePadding, currentY + MessagePadding),
+                        Game1.textColor
+                    );
+                }
+
+                currentY += bubbleHeight + MessageSpacing;
             }
+
+            b.End();
+            b.GraphicsDevice.ScissorRectangle = originalScissorRect;
+            b.Begin(SpriteSortMode.Deferred, BlendState.AlphaBlend, SamplerState.PointClamp, null, originalRasterizerState);
 
             // Draw input box
             this.inputTextBox.Draw(b);
@@ -250,14 +281,17 @@ namespace StardewGPT.UI
             this.sendButton.draw(b);
 
             // Draw scroll indicator if needed
-            if (this.chatHistory.Count > this.maxVisibleMessages)
+            int totalMessagesHeight = this.CalculateTotalMessagesHeight();
+            int visibleAreaHeight = this.height - Padding * 2 - InputBoxHeight - MessageSpacing;
+            if (totalMessagesHeight > visibleAreaHeight)
             {
-                string scrollText = $"↑↓ {this.scrollOffset + 1}-{Math.Min(this.scrollOffset + this.maxVisibleMessages, this.chatHistory.Count)}/{this.chatHistory.Count}";
+                float scrollPercentage = (float)this.scrollOffset / (totalMessagesHeight - visibleAreaHeight);
+                string scrollText = $"↑↓ {(int)(scrollPercentage * 100)}%";
                 Utility.drawTextWithShadow(
                     b,
                     scrollText,
                     Game1.smallFont,
-                    new Vector2(this.xPositionOnScreen + this.width - Padding - 100, this.yPositionOnScreen + Padding),
+                    new Vector2(this.xPositionOnScreen + this.width - Padding - 80, this.yPositionOnScreen + Padding),
                     Color.Gray
                 );
             }
@@ -297,6 +331,25 @@ namespace StardewGPT.UI
                 result.Append(currentLine.ToString());
 
             return result.ToString();
+        }
+
+        /// <summary>Calculate the total height of all messages.</summary>
+        private int CalculateTotalMessagesHeight()
+        {
+            int totalHeight = 0;
+            int messageAreaWidth = this.width - Padding * 2;
+            int bubbleMaxWidth = messageAreaWidth / 2 - MessageSpacing;
+
+            foreach (var message in this.chatHistory)
+            {
+                string wrappedText = this.WrapText(message.Text, bubbleMaxWidth - MessagePadding * 2, Game1.smallFont);
+                Vector2 textSize = Game1.smallFont.MeasureString(wrappedText);
+                int bubbleHeight = (int)textSize.Y + MessagePadding * 2;
+
+                totalHeight += bubbleHeight + MessageSpacing;
+            }
+
+            return totalHeight;
         }
     }
 
