@@ -225,11 +225,9 @@ namespace StardewGPT.UI
 
             foreach (var message in this.chatHistory)
             {
-                // Calculate message dimensions
-                string wrappedText = this.WrapText(message.Text, bubbleMaxWidth - MessagePadding * 2, Game1.smallFont);
-                Vector2 textSize = Game1.smallFont.MeasureString(wrappedText);
-                int bubbleHeight = (int)textSize.Y + MessagePadding * 2;
-                int bubbleWidth = Math.Min(bubbleMaxWidth, (int)textSize.X + MessagePadding * 2);
+                // Calculate message dimensions (cached)
+                var (wrappedText, bubbleHeight, bubbleWidth) = this.GetMessageDimensions(message, bubbleMaxWidth - MessagePadding * 2);
+                bubbleWidth = Math.Min(bubbleMaxWidth, bubbleWidth);
 
                 // Position bubble (user messages on right, AI on left)
                 int bubbleX = message.IsUser
@@ -333,6 +331,28 @@ namespace StardewGPT.UI
             return result.ToString();
         }
 
+        /// <summary>Calculate message dimensions with caching.</summary>
+        private (string wrappedText, int height, int width) GetMessageDimensions(ChatMessage message, int maxWidth)
+        {
+            // Return cached values if available
+            if (message.CachedWrappedText != null && message.CachedWidth == maxWidth)
+            {
+                return (message.CachedWrappedText, message.CachedHeight, message.CachedWidth);
+            }
+
+            // Calculate and cache
+            string wrappedText = this.WrapText(message.Text, maxWidth, Game1.smallFont);
+            Vector2 textSize = Game1.smallFont.MeasureString(wrappedText);
+            int height = (int)textSize.Y + MessagePadding * 2;
+            int width = Math.Min(maxWidth + MessagePadding * 2, (int)textSize.X + MessagePadding * 2);
+
+            message.CachedWrappedText = wrappedText;
+            message.CachedHeight = height;
+            message.CachedWidth = width;
+
+            return (wrappedText, height, width);
+        }
+
         /// <summary>Calculate the total height of all messages.</summary>
         private int CalculateTotalMessagesHeight()
         {
@@ -342,11 +362,8 @@ namespace StardewGPT.UI
 
             foreach (var message in this.chatHistory)
             {
-                string wrappedText = this.WrapText(message.Text, bubbleMaxWidth - MessagePadding * 2, Game1.smallFont);
-                Vector2 textSize = Game1.smallFont.MeasureString(wrappedText);
-                int bubbleHeight = (int)textSize.Y + MessagePadding * 2;
-
-                totalHeight += bubbleHeight + MessageSpacing;
+                var (_, height, _) = this.GetMessageDimensions(message, bubbleMaxWidth - MessagePadding * 2);
+                totalHeight += height + MessageSpacing;
             }
 
             return totalHeight;
@@ -359,5 +376,10 @@ namespace StardewGPT.UI
         public string Text { get; set; } = "";
         public bool IsUser { get; set; }
         public DateTime Timestamp { get; set; }
+
+        // Cache for wrapped text and dimensions
+        internal string? CachedWrappedText { get; set; }
+        internal int CachedHeight { get; set; }
+        internal int CachedWidth { get; set; }
     }
 }

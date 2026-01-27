@@ -92,58 +92,5 @@ namespace StardewGPT.Services
                 throw;
             }
         }
-
-        /// <summary>Check if a question is related to Stardew Valley.</summary>
-        /// <param name="question">The user's question.</param>
-        /// <returns>True if the question is Stardew Valley related, false otherwise.</returns>
-        public async Task<bool> IsStardewRelatedAsync(string question)
-        {
-            try
-            {
-                string systemPrompt = @"You are a classifier that determines if a question is related to Stardew Valley (the video game).
-Respond with ONLY 'YES' if the question is about Stardew Valley (farming, characters, items, gameplay, locations, etc.).
-Respond with ONLY 'NO' if the question is completely unrelated to Stardew Valley.";
-
-                var requestBody = new
-                {
-                    model = this.config.Model,
-                    messages = new[]
-                    {
-                        new { role = "system", content = systemPrompt },
-                        new { role = "user", content = question }
-                    },
-                    max_tokens = 10,
-                    temperature = 0.0f,
-                    stream = false
-                };
-
-                string jsonRequest = JsonConvert.SerializeObject(requestBody);
-
-                var request = new HttpRequestMessage(HttpMethod.Post, this.config.ApiEndpoint)
-                {
-                    Content = new StringContent(jsonRequest, Encoding.UTF8, "application/json")
-                };
-                request.Headers.Add("Authorization", $"Bearer {this.config.ApiKey}");
-
-                HttpResponseMessage response = await this.httpClient.SendAsync(request);
-                string responseContent = await response.Content.ReadAsStringAsync();
-
-                if (!response.IsSuccessStatusCode)
-                {
-                    this.monitor.Log($"Classification API error: {response.StatusCode}", LogLevel.Warn);
-                    return true; // Default to allowing the question if classification fails
-                }
-
-                JObject responseJson = JObject.Parse(responseContent);
-                string? classification = responseJson["choices"]?[0]?["message"]?["content"]?.ToString()?.Trim().ToUpper();
-
-                return classification?.Contains("YES") ?? true;
-            }
-            catch (Exception ex)
-            {
-                this.monitor.Log($"Error classifying question: {ex.Message}", LogLevel.Warn);
-                return true; // Default to allowing the question if classification fails
-            }
-        }
     }
 }
