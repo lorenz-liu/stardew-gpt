@@ -1,3 +1,5 @@
+using StardewModdingAPI;
+
 namespace StardewGPT
 {
     /// <summary>The mod configuration.</summary>
@@ -17,5 +19,8 @@ namespace StardewGPT
 
         /// <summary>Temperature for response generation.</summary>
         public float Temperature { get; set; } = 0.7f;
+
+        /// <summary>The keybind to open the chat menu.</summary>
+        public SButton OpenChatKey { get; set; } = SButton.K;
     }
 }

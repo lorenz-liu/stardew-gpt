@@ -28,7 +28,7 @@ namespace StardewGPT.UI
         private const int MessageHeight = 80;
 
         public ChatTab(int xPositionOnScreen, int yPositionOnScreen, int width, int height)
-            : base(xPositionOnScreen, yPositionOnScreen, width, height, showUpperRightCloseButton: false)
+            : base(xPositionOnScreen, yPositionOnScreen, width, height, showUpperRightCloseButton: true)
         {
             this.chatHistory = new List<ChatMessage>();
 
@@ -67,6 +67,9 @@ namespace StardewGPT.UI
 
             // Add welcome message
             this.AddMessage(ModEntry.I18n!.Get("chat.welcome"), isUser: false);
+
+            // Auto-focus the text box
+            this.inputTextBox.Selected = true;
         }
 
         /// <summary>Add a message to the chat history.</summary>
@@ -149,7 +152,7 @@ namespace StardewGPT.UI
             }
 
             // Focus text box if clicked
-            this.inputTextBox.Selected = this.inputTextBox.bounds.Contains(x, y);
+            this.inputTextBox.Selected = new Rectangle(this.inputTextBox.X, this.inputTextBox.Y, this.inputTextBox.Width, this.inputTextBox.Height).Contains(x, y);
         }
 
         public override void receiveKeyPress(Keys key)
@@ -159,12 +162,6 @@ namespace StardewGPT.UI
             {
                 this.SendMessage();
                 return;
-            }
-
-            // Pass other keys to text box
-            if (this.inputTextBox.Selected)
-            {
-                this.inputTextBox.RecieveTextInput(key);
             }
 
             base.receiveKeyPress(key);

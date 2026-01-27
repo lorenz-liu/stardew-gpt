@@ -82,7 +82,7 @@ namespace StardewGPT.Services
 
                 // Friendships
                 sb.AppendLine("=== FRIENDSHIPS (Top 10) ===");
-                var friendships = Game1.player.friendshipData
+                var friendships = Game1.player.friendshipData.Pairs
                     .OrderByDescending(f => f.Value.Points)
                     .Take(10)
                     .ToList();
@@ -134,8 +134,8 @@ namespace StardewGPT.Services
                 sb.AppendLine($"Community Center Complete: {Game1.MasterPlayer.hasCompletedCommunityCenter()}");
                 if (Game1.locations.OfType<CommunityCenter>().FirstOrDefault() is CommunityCenter cc)
                 {
-                    int totalBundles = cc.bundles.Count;
-                    int completedBundles = cc.bundles.Count(b => b.Value[0] == true);
+                    int totalBundles = cc.bundles.Count();
+                    int completedBundles = cc.bundles.Pairs.Count(b => b.Value[0] == true);
                     sb.AppendLine($"Bundles Completed: {completedBundles}/{totalBundles}");
                 }
                 sb.AppendLine();
@@ -218,7 +218,7 @@ namespace StardewGPT.Services
                 if (lowerQuestion.Contains("friend") || lowerQuestion.Contains("relationship") || lowerQuestion.Contains("villager") || lowerQuestion.Contains("heart"))
                 {
                     sb.AppendLine("Friendships:");
-                    var friendships = Game1.player.friendshipData.OrderByDescending(f => f.Value.Points).Take(10);
+                    var friendships = Game1.player.friendshipData.Pairs.OrderByDescending(f => f.Value.Points).Take(10);
                     foreach (var friendship in friendships)
                     {
                         int hearts = friendship.Value.Points / 250;
