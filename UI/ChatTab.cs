@@ -197,18 +197,9 @@ namespace StardewGPT.UI
                 true
             );
 
-            // Draw title
-            string title = ModEntry.I18n!.Get("tab.title");
-            SpriteText.drawStringHorizontallyCenteredAt(
-                b,
-                title,
-                this.xPositionOnScreen + this.width / 2,
-                this.yPositionOnScreen + Padding
-            );
-
             // Draw chat messages
-            int messageY = this.yPositionOnScreen + Padding + 64;
-            int messageAreaHeight = this.height - Padding * 3 - InputBoxHeight - 64;
+            int messageY = this.yPositionOnScreen + Padding;
+            int messageAreaHeight = this.height - Padding * 2 - InputBoxHeight;
             int visibleMessages = Math.Min(this.maxVisibleMessages, this.chatHistory.Count);
 
             for (int i = 0; i < visibleMessages; i++)
@@ -257,19 +248,6 @@ namespace StardewGPT.UI
 
             // Draw send button
             this.sendButton.draw(b);
-
-            // Draw button label
-            string buttonText = ModEntry.I18n!.Get("chat.send");
-            Utility.drawTextWithShadow(
-                b,
-                buttonText,
-                Game1.smallFont,
-                new Vector2(
-                    this.sendButton.bounds.X + (this.sendButton.bounds.Width - Game1.smallFont.MeasureString(buttonText).X) / 2,
-                    this.sendButton.bounds.Y + (this.sendButton.bounds.Height - Game1.smallFont.MeasureString(buttonText).Y) / 2
-                ),
-                this.isWaitingForResponse ? Color.Gray : Game1.textColor
-            );
 
             // Draw scroll indicator if needed
             if (this.chatHistory.Count > this.maxVisibleMessages)

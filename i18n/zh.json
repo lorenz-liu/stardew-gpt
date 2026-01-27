@@ -1,9 +1,6 @@
 {
-  "tab.name": "AI助手",
-  "tab.title": "星露谷物语AI助手",
   "chat.welcome": "你好！我是一个熟知星露谷一切的老农民。问我任何关于农场、村民或山谷的问题吧！",
   "chat.thinking": "思考中...",
-  "chat.send": "发送",
   "chat.placeholder": "问我关于星露谷的问题...",
   "error.non_stardew": "我只是一个星露谷的老农民，搞不懂村子外面的事情...这种问题还是去问城里人吧。",
   "error.api": "抱歉，我现在有点想不起来了。请稍后再试。"
