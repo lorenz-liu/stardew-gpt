@@ -19,7 +19,7 @@ namespace StardewGPT
 
         private AIClient? aiClient;
         private GameDataExtractor? gameDataExtractor;
-        private WikiDataLoader? wikiDataLoader;
+        private LocalKnowledgeLoader? localKnowledgeLoader;
 
         /// <summary>The mod entry point, called after the mod is first loaded.</summary>
         /// <param name="helper">Provides simplified APIs for writing mods.</param>
@@ -52,13 +52,13 @@ namespace StardewGPT
                 // Create service instances
                 this.aiClient = new AIClient(this.Config!, this.Monitor);
                 this.gameDataExtractor = new GameDataExtractor(this.Monitor);
-                this.wikiDataLoader = new WikiDataLoader(this.Monitor, this.Helper.DirectoryPath);
+                this.localKnowledgeLoader = new LocalKnowledgeLoader(this.Monitor, this.Helper.DirectoryPath);
 
                 // Create RAG orchestrator
                 RagOrchestrator = new RAGOrchestrator(
                     this.aiClient,
                     this.gameDataExtractor,
-                    this.wikiDataLoader,
+                    this.localKnowledgeLoader,
                     this.Monitor,
                     this.Helper.Translation
                 );
@@ -76,15 +76,15 @@ namespace StardewGPT
         {
             try
             {
-                // Initialize wiki data asynchronously
-                if (this.wikiDataLoader != null)
+                // Initialize local knowledge base asynchronously
+                if (this.localKnowledgeLoader != null)
                 {
-                    await this.wikiDataLoader.InitializeAsync();
+                    await this.localKnowledgeLoader.InitializeAsync();
                 }
             }
             catch (System.Exception ex)
             {
-                this.Monitor.Log($"Error loading wiki data: {ex.Message}", LogLevel.Error);
+                this.Monitor.Log($"Error loading knowledge base: {ex.Message}", LogLevel.Error);
             }
         }
 

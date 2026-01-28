@@ -10,20 +10,20 @@ namespace StardewGPT.Services
     {
         private readonly AIClient aiClient;
         private readonly GameDataExtractor gameDataExtractor;
-        private readonly WikiDataLoader wikiDataLoader;
+        private readonly LocalKnowledgeLoader localKnowledgeLoader;
         private readonly IMonitor monitor;
         private readonly ITranslationHelper i18n;
 
         public RAGOrchestrator(
             AIClient aiClient,
             GameDataExtractor gameDataExtractor,
-            WikiDataLoader wikiDataLoader,
+            LocalKnowledgeLoader localKnowledgeLoader,
             IMonitor monitor,
             ITranslationHelper i18n)
         {
             this.aiClient = aiClient;
             this.gameDataExtractor = gameDataExtractor;
-            this.wikiDataLoader = wikiDataLoader;
+            this.localKnowledgeLoader = localKnowledgeLoader;
             this.monitor = monitor;
             this.i18n = i18n;
         }
@@ -75,13 +75,13 @@ namespace StardewGPT.Services
                     contextBuilder.AppendLine();
                 }
 
-                // Search wiki for relevant information
-                this.monitor.Log("Searching wiki data...", LogLevel.Debug);
-                var wikiEntries = await this.wikiDataLoader.SearchAsync(question, maxResults: 3);
-                if (wikiEntries.Count > 0)
+                // Search local knowledge base for relevant information
+                this.monitor.Log("Searching local knowledge base...", LogLevel.Debug);
+                var knowledgeEntries = await this.localKnowledgeLoader.SearchAsync(question, maxResults: 3);
+                if (knowledgeEntries.Count > 0)
                 {
-                    string wikiContext = this.wikiDataLoader.GetFormattedContext(wikiEntries);
-                    contextBuilder.AppendLine(wikiContext);
+                    string knowledgeContext = this.localKnowledgeLoader.GetFormattedContext(knowledgeEntries);
+                    contextBuilder.AppendLine(knowledgeContext);
                 }
 
                 this.monitor.Log($"Retrieved context length: {contextBuilder.Length} characters", LogLevel.Debug);
