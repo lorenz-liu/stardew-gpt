@@ -335,7 +335,7 @@ namespace StardewGPT.UI
         private (string wrappedText, int height, int width) GetMessageDimensions(ChatMessage message, int maxWidth)
         {
             // Return cached values if available
-            if (message.CachedWrappedText != null && message.CachedWidth == maxWidth)
+            if (message.CachedWrappedText != null && message.CachedMaxWidth == maxWidth)
             {
                 return (message.CachedWrappedText, message.CachedHeight, message.CachedWidth);
             }
@@ -344,11 +344,13 @@ namespace StardewGPT.UI
             string wrappedText = this.WrapText(message.Text, maxWidth, Game1.smallFont);
             Vector2 textSize = Game1.smallFont.MeasureString(wrappedText);
             int height = (int)textSize.Y + MessagePadding * 2;
-            int width = Math.Min(maxWidth + MessagePadding * 2, (int)textSize.X + MessagePadding * 2);
+            // Ensure width never exceeds maxWidth + padding
+            int width = maxWidth + MessagePadding * 2;
 
             message.CachedWrappedText = wrappedText;
             message.CachedHeight = height;
             message.CachedWidth = width;
+            message.CachedMaxWidth = maxWidth;
 
             return (wrappedText, height, width);
         }
@@ -381,5 +383,6 @@ namespace StardewGPT.UI
         internal string? CachedWrappedText { get; set; }
         internal int CachedHeight { get; set; }
         internal int CachedWidth { get; set; }
+        internal int CachedMaxWidth { get; set; }
     }
 }
