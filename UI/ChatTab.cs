@@ -20,6 +20,7 @@ namespace StardewGPT.UI
 
         // UI Layout constants
         private const int Padding = 32;
+        private const int TopPadding = 64; // Extra padding for dialogue box border
         private const int InputBoxHeight = 48;
         private const int MessageSpacing = 12;
         private const int MessagePadding = 12;
@@ -66,7 +67,7 @@ namespace StardewGPT.UI
 
             // Auto-scroll to bottom
             int totalHeight = this.CalculateTotalMessagesHeight();
-            int messageAreaHeight = this.height - Padding * 2 - InputBoxHeight - MessageSpacing;
+            int messageAreaHeight = this.height - TopPadding - Padding - InputBoxHeight - MessageSpacing;
             this.scrollOffset = Math.Max(0, totalHeight - messageAreaHeight);
         }
 
@@ -161,7 +162,7 @@ namespace StardewGPT.UI
 
             // Scroll chat history
             int totalHeight = this.CalculateTotalMessagesHeight();
-            int messageAreaHeight = this.height - Padding * 2 - InputBoxHeight - MessageSpacing;
+            int messageAreaHeight = this.height - TopPadding - Padding - InputBoxHeight - MessageSpacing;
             int maxScroll = Math.Max(0, totalHeight - messageAreaHeight);
 
             if (direction > 0)
@@ -188,9 +189,9 @@ namespace StardewGPT.UI
 
             // Draw chat messages
             int messageAreaX = this.xPositionOnScreen + Padding;
-            int messageAreaY = this.yPositionOnScreen + Padding;
+            int messageAreaY = this.yPositionOnScreen + TopPadding;
             int messageAreaWidth = this.width - Padding * 2;
-            int messageAreaHeight = this.height - Padding * 2 - InputBoxHeight - MessageSpacing;
+            int messageAreaHeight = this.height - TopPadding - Padding - InputBoxHeight - MessageSpacing;
             int bubbleMaxWidth = messageAreaWidth / 2 - MessageSpacing;
 
             // Create a scissor rectangle to clip messages outside the area
@@ -264,7 +265,7 @@ namespace StardewGPT.UI
 
             // Draw scroll indicator if needed
             int totalMessagesHeight = this.CalculateTotalMessagesHeight();
-            int visibleAreaHeight = this.height - Padding * 2 - InputBoxHeight - MessageSpacing;
+            int visibleAreaHeight = this.height - TopPadding - Padding - InputBoxHeight - MessageSpacing;
             if (totalMessagesHeight > visibleAreaHeight)
             {
                 float scrollPercentage = (float)this.scrollOffset / (totalMessagesHeight - visibleAreaHeight);
@@ -273,7 +274,7 @@ namespace StardewGPT.UI
                     b,
                     scrollText,
                     Game1.smallFont,
-                    new Vector2(this.xPositionOnScreen + this.width - Padding - 80, this.yPositionOnScreen + Padding),
+                    new Vector2(this.xPositionOnScreen + this.width - Padding - 80, this.yPositionOnScreen + TopPadding),
                     Color.Gray
                 );
             }
