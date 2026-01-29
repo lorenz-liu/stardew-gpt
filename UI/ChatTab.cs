@@ -14,7 +14,6 @@ namespace StardewGPT.UI
     public class ChatTab : IClickableMenu
     {
         private readonly TextBox inputTextBox;
-        private readonly ClickableTextureComponent sendButton;
         private readonly List<ChatMessage> chatHistory;
         private int scrollOffset = 0;
         private bool isWaitingForResponse = false;
@@ -22,7 +21,6 @@ namespace StardewGPT.UI
         // UI Layout constants
         private const int Padding = 32;
         private const int InputBoxHeight = 48;
-        private const int ButtonWidth = 100;
         private const int MessageSpacing = 12;
         private const int MessagePadding = 12;
 
@@ -32,7 +30,7 @@ namespace StardewGPT.UI
             this.chatHistory = new List<ChatMessage>();
 
             // Create input text box
-            int inputBoxWidth = width - Padding * 2 - ButtonWidth - 16;
+            int inputBoxWidth = width - Padding * 2;
             int inputBoxX = xPositionOnScreen + Padding;
             int inputBoxY = yPositionOnScreen + height - Padding - InputBoxHeight;
 
@@ -47,21 +45,6 @@ namespace StardewGPT.UI
                 Y = inputBoxY,
                 Width = inputBoxWidth,
                 Height = InputBoxHeight
-            };
-
-            // Create send button
-            int buttonX = inputBoxX + inputBoxWidth + 16;
-            int buttonY = inputBoxY;
-
-            this.sendButton = new ClickableTextureComponent(
-                bounds: new Rectangle(buttonX, buttonY, ButtonWidth, InputBoxHeight),
-                texture: Game1.mouseCursors,
-                sourceRect: new Rectangle(128, 256, 64, 64),
-                scale: 1f
-            )
-            {
-                myID = 101,
-                name = "SendButton"
             };
 
             // Add welcome message
@@ -98,6 +81,9 @@ namespace StardewGPT.UI
             this.AddMessage(message, isUser: true);
             this.inputTextBox.Text = "";
 
+            // Play sound when message is sent
+            Game1.playSound("shwip");
+
             // Show loading indicator
             this.isWaitingForResponse = true;
             this.AddMessage(ModEntry.I18n!.Get("chat.thinking"), isUser: false);
@@ -114,6 +100,9 @@ namespace StardewGPT.UI
 
                     // Add AI response
                     this.AddMessage(response, isUser: false);
+
+                    // Play sound when response is received
+                    Game1.playSound("newRecipe");
                 }
                 else
                 {
@@ -123,6 +112,9 @@ namespace StardewGPT.UI
                     // Show error if RAG system is not initialized
                     this.AddMessage("RAG system not initialized. Please check your configuration.", isUser: false);
                     ModEntry.ModMonitor?.Log("RAG orchestrator is null", StardewModdingAPI.LogLevel.Error);
+
+                    // Play sound when response is received
+                    Game1.playSound("newRecipe");
                 }
             }
             catch (Exception ex)
@@ -133,6 +125,9 @@ namespace StardewGPT.UI
                 // Show error
                 this.AddMessage($"Error: {ex.Message}", isUser: false);
                 ModEntry.ModMonitor?.Log($"Error sending message: {ex}", StardewModdingAPI.LogLevel.Error);
+
+                // Play sound when response is received
+                Game1.playSound("newRecipe");
             }
             finally
             {
@@ -143,14 +138,6 @@ namespace StardewGPT.UI
         public override void receiveLeftClick(int x, int y, bool playSound = true)
         {
             base.receiveLeftClick(x, y, playSound);
-
-            // Check if send button was clicked
-            if (this.sendButton.containsPoint(x, y))
-            {
-                if (playSound)
-                    Game1.playSound("bigDeSelect");
-                this.SendMessage();
-            }
 
             // Focus text box if clicked
             this.inputTextBox.Selected = new Rectangle(this.inputTextBox.X, this.inputTextBox.Y, this.inputTextBox.Width, this.inputTextBox.Height).Contains(x, y);
@@ -274,9 +261,6 @@ namespace StardewGPT.UI
 
             // Draw input box
             this.inputTextBox.Draw(b);
-
-            // Draw send button
-            this.sendButton.draw(b);
 
             // Draw scroll indicator if needed
             int totalMessagesHeight = this.CalculateTotalMessagesHeight();
