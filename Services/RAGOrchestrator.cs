@@ -51,6 +51,11 @@ namespace StardewGPT.Services
                 this.monitor.Log("Successfully generated response", LogLevel.Debug);
                 return response;
             }
+            catch (InvalidApiKeyException)
+            {
+                this.monitor.Log("Invalid API key detected", LogLevel.Error);
+                return this.i18n.Get("error.invalid_api_key");
+            }
             catch (Exception ex)
             {
                 this.monitor.Log($"Error processing question: {ex.Message}", LogLevel.Error);

@@ -8,6 +8,12 @@ using StardewModdingAPI;
 
 namespace StardewGPT.Services
 {
+    /// <summary>Exception thrown when an invalid API key is used.</summary>
+    public class InvalidApiKeyException : Exception
+    {
+        public InvalidApiKeyException(string message) : base(message) { }
+    }
+
     /// <summary>Client for communicating with LLM API (Groq/OpenAI compatible).</summary>
     public class AIClient
     {
@@ -71,6 +77,27 @@ namespace StardewGPT.Services
                 if (!response.IsSuccessStatusCode)
                 {
                     this.monitor.Log($"API error: {response.StatusCode} - {responseContent}", LogLevel.Error);
+
+                    // Check for invalid API key error
+                    if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+                    {
+                        try
+                        {
+                            JObject errorJson = JObject.Parse(responseContent);
+                            string? errorCode = errorJson["error"]?["code"]?.ToString();
+                            string? errorType = errorJson["error"]?["type"]?.ToString();
+
+                            if (errorCode == "invalid_api_key" || errorType == "invalid_request_error")
+                            {
+                                throw new InvalidApiKeyException("Invalid API key");
+                            }
+                        }
+                        catch (JsonException)
+                        {
+                            // If JSON parsing fails, fall through to generic error
+                        }
+                    }
+
                     throw new Exception($"API request failed: {response.StatusCode}");
                 }
 
