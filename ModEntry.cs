@@ -20,6 +20,7 @@ namespace StardewGPT
         private AIClient? aiClient;
         private GameDataExtractor? gameDataExtractor;
         private LocalKnowledgeLoader? localKnowledgeLoader;
+        private ChatHistoryManager? chatHistoryManager;
 
         /// <summary>The mod entry point, called after the mod is first loaded.</summary>
         /// <param name="helper">Provides simplified APIs for writing mods.</param>
@@ -53,12 +54,14 @@ namespace StardewGPT
                 this.aiClient = new AIClient(this.Config!, this.Monitor);
                 this.gameDataExtractor = new GameDataExtractor(this.Monitor);
                 this.localKnowledgeLoader = new LocalKnowledgeLoader(this.Monitor, this.Helper.DirectoryPath);
+                this.chatHistoryManager = new ChatHistoryManager(this.Helper.DirectoryPath, this.Monitor);
 
                 // Create RAG orchestrator
                 RagOrchestrator = new RAGOrchestrator(
                     this.aiClient,
                     this.gameDataExtractor,
                     this.localKnowledgeLoader,
+                    this.chatHistoryManager,
                     this.Monitor,
                     this.Helper.Translation
                 );
@@ -91,10 +94,15 @@ namespace StardewGPT
         /// <summary>Raised after the player presses a button on the keyboard, controller, or mouse.</summary>
         private void OnButtonPressed(object? sender, ButtonPressedEventArgs e)
         {
-            // Suppress ALL input if chat menu is open, EXCEPT ESC (to close) and Enter (to send)
+            // Suppress keyboard input if chat menu is open, but allow mouse clicks for UI interaction
             if (Game1.activeClickableMenu is ChatTab)
             {
-                if (e.Button != SButton.Escape && e.Button != SButton.Enter)
+                // Allow ESC (to close), Enter (to send), and all mouse buttons (for UI interaction)
+                if (e.Button != SButton.Escape &&
+                    e.Button != SButton.Enter &&
+                    e.Button != SButton.MouseLeft &&
+                    e.Button != SButton.MouseRight &&
+                    e.Button != SButton.MouseMiddle)
                 {
                     this.Helper!.Input.Suppress(e.Button);
                 }

@@ -15,10 +15,10 @@ namespace StardewGPT
         public string Model { get; set; } = "openai/gpt-oss-120b";
 
         /// <summary>Maximum tokens for response.</summary>
-        public int MaxTokens { get; set; } = 500;
+        public int MaxTokens { get; set; } = 800;
 
         /// <summary>Temperature for response generation.</summary>
-        public float Temperature { get; set; } = 0.7f;
+        public float Temperature { get; set; } = 0.3f;
 
         /// <summary>Reasoning effort for o1 models (low, medium, high).</summary>
         public string? ReasoningEffort { get; set; } = "medium";

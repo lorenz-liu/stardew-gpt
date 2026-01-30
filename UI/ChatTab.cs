@@ -15,6 +15,7 @@ namespace StardewGPT.UI
     {
         private readonly TextBox inputTextBox;
         private readonly List<ChatMessage> chatHistory;
+        private readonly ClickableTextureComponent clearHistoryButton;
         private int scrollOffset = 0;
         private bool isWaitingForResponse = false;
 
@@ -24,13 +25,14 @@ namespace StardewGPT.UI
         private const int InputBoxHeight = 48;
         private const int MessageSpacing = 12;
         private const int MessagePadding = 12;
+        private const int ButtonSize = 64;
 
         public ChatTab(int xPositionOnScreen, int yPositionOnScreen, int width, int height)
             : base(xPositionOnScreen, yPositionOnScreen, width, height, showUpperRightCloseButton: true)
         {
             this.chatHistory = new List<ChatMessage>();
 
-            // Create input text box
+            // Create input text box (full width now, no button next to it)
             int inputBoxWidth = width - Padding * 2;
             int inputBoxX = xPositionOnScreen + Padding;
             int inputBoxY = yPositionOnScreen + height - Padding - InputBoxHeight;
@@ -48,11 +50,71 @@ namespace StardewGPT.UI
                 Height = InputBoxHeight
             };
 
-            // Add welcome message
-            this.AddMessage(ModEntry.I18n!.Get("chat.welcome"), isUser: false);
+            // Create clear history button in top-right corner (inside the content area)
+            // Use the same padding as the message area for consistent positioning
+            int buttonX = xPositionOnScreen + width - ButtonSize - Padding - 20; // Align with content area
+            int buttonY = yPositionOnScreen + TopPadding - 20; // Just inside the top content area
+            this.clearHistoryButton = new ClickableTextureComponent(
+                new Rectangle(buttonX, buttonY, ButtonSize, ButtonSize),
+                Game1.mouseCursors,
+                new Rectangle(564, 102, 18, 26), // Dustbin/trash can icon
+                2.5f
+            )
+            {
+                myID = 101,
+                name = "ClearHistory"
+            };
+
+            // Load persisted chat history
+            this.LoadChatHistory();
+
+            // If no history, add welcome message
+            if (this.chatHistory.Count == 0)
+            {
+                this.AddMessage(ModEntry.I18n!.Get("chat.welcome"), isUser: false);
+            }
 
             // Auto-focus the text box
             this.inputTextBox.Selected = true;
+        }
+
+        /// <summary>Load chat history from the persistent storage.</summary>
+        private void LoadChatHistory()
+        {
+            try
+            {
+                if (ModEntry.RagOrchestrator != null)
+                {
+                    // Get the chat history manager through a new public method
+                    var persistedHistory = ModEntry.RagOrchestrator.GetChatHistory();
+
+                    // Convert persisted messages to UI messages
+                    foreach (var msg in persistedHistory)
+                    {
+                        bool isUser = msg.Role == "user";
+                        this.chatHistory.Add(new ChatMessage
+                        {
+                            Text = msg.Content,
+                            IsUser = isUser,
+                            Timestamp = msg.Timestamp
+                        });
+                    }
+
+                    // Auto-scroll to bottom if there's history
+                    if (this.chatHistory.Count > 0)
+                    {
+                        int totalHeight = this.CalculateTotalMessagesHeight();
+                        int messageAreaHeight = this.height - TopPadding - Padding - InputBoxHeight - MessageSpacing;
+                        this.scrollOffset = Math.Max(0, totalHeight - messageAreaHeight);
+                    }
+
+                    ModEntry.ModMonitor?.Log($"Loaded {this.chatHistory.Count} messages from history", StardewModdingAPI.LogLevel.Debug);
+                }
+            }
+            catch (Exception ex)
+            {
+                ModEntry.ModMonitor?.Log($"Error loading chat history: {ex.Message}", StardewModdingAPI.LogLevel.Warn);
+            }
         }
 
         /// <summary>Add a message to the chat history.</summary>
@@ -138,10 +200,47 @@ namespace StardewGPT.UI
 
         public override void receiveLeftClick(int x, int y, bool playSound = true)
         {
+            // Check if clear history button was clicked BEFORE calling base
+            if (this.clearHistoryButton.containsPoint(x, y))
+            {
+                this.ClearChatHistory();
+                Game1.playSound("trashcan");
+                return;
+            }
+
             base.receiveLeftClick(x, y, playSound);
 
             // Focus text box if clicked
             this.inputTextBox.Selected = new Rectangle(this.inputTextBox.X, this.inputTextBox.Y, this.inputTextBox.Width, this.inputTextBox.Height).Contains(x, y);
+        }
+
+        /// <summary>Clear the chat history.</summary>
+        private void ClearChatHistory()
+        {
+            // Clear UI chat history
+            this.chatHistory.Clear();
+
+            // Clear persistent chat history
+            if (ModEntry.RagOrchestrator != null)
+            {
+                ModEntry.RagOrchestrator.ClearHistory();
+            }
+
+            // Add welcome message back
+            this.AddMessage(ModEntry.I18n!.Get("chat.welcome"), isUser: false);
+
+            // Reset scroll
+            this.scrollOffset = 0;
+
+            ModEntry.ModMonitor?.Log("Chat history cleared", StardewModdingAPI.LogLevel.Info);
+        }
+
+        public override void performHoverAction(int x, int y)
+        {
+            base.performHoverAction(x, y);
+
+            // Update button scale on hover
+            this.clearHistoryButton.scale = this.clearHistoryButton.containsPoint(x, y) ? 2.8f : 2.5f;
         }
 
         public override void receiveKeyPress(Keys key)
@@ -263,19 +362,16 @@ namespace StardewGPT.UI
             // Draw input box
             this.inputTextBox.Draw(b);
 
-            // Draw scroll indicator if needed
-            int totalMessagesHeight = this.CalculateTotalMessagesHeight();
-            int visibleAreaHeight = this.height - TopPadding - Padding - InputBoxHeight - MessageSpacing;
-            if (totalMessagesHeight > visibleAreaHeight)
+            // Draw clear history button
+            this.clearHistoryButton.draw(b);
+
+            // Draw button hover text
+            if (this.clearHistoryButton.containsPoint(Game1.getMouseX(), Game1.getMouseY()))
             {
-                float scrollPercentage = (float)this.scrollOffset / (totalMessagesHeight - visibleAreaHeight);
-                string scrollText = $"↑↓ {(int)(scrollPercentage * 100)}%";
-                Utility.drawTextWithShadow(
+                IClickableMenu.drawHoverText(
                     b,
-                    scrollText,
-                    Game1.smallFont,
-                    new Vector2(this.xPositionOnScreen + this.width - Padding - 80, this.yPositionOnScreen + TopPadding),
-                    Color.Gray
+                    "Clear History",
+                    Game1.smallFont
                 );
             }
 

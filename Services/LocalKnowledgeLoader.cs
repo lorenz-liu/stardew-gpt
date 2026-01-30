@@ -399,7 +399,14 @@ namespace StardewGPT.Services
         /// <summary>Extract relevant snippet from document content.</summary>
         private string ExtractRelevantSnippet(string content, string[] queryTerms)
         {
-            const int maxLength = 500;
+            const int maxLength = 2000; // Increased from 500 to allow more context
+            const int shortDocumentThreshold = 1500; // Return full content for short documents
+
+            // Return full content for short documents
+            if (content.Length <= shortDocumentThreshold)
+            {
+                return this.CleanMarkdown(content).Trim();
+            }
 
             // Split into paragraphs
             var paragraphs = content.Split(new[] { "\n\n" }, StringSplitOptions.RemoveEmptyEntries);
@@ -407,22 +414,43 @@ namespace StardewGPT.Services
             if (paragraphs.Length == 0)
                 return "";
 
-            // Find paragraph with most query term matches
-            var bestParagraph = paragraphs
+            // Score all paragraphs based on relevance
+            var scoredParagraphs = paragraphs
                 .Select(p => new
                 {
                     Text = p,
-                    Score = queryTerms.Count(term => p.ToLower().Contains(term))
+                    Score = this.ScoreParagraphRelevance(p, queryTerms)
                 })
                 .OrderByDescending(p => p.Score)
-                .First();
+                .ToList();
 
-            string snippet = bestParagraph.Text;
+            // Take top 3-5 paragraphs (multi-paragraph extraction)
+            var topParagraphs = scoredParagraphs
+                .Take(5)
+                .Where(p => p.Score > 0)
+                .ToList();
 
-            // Clean markdown
-            snippet = this.CleanMarkdown(snippet);
+            // Build snippet from top paragraphs
+            var snippetBuilder = new System.Text.StringBuilder();
 
-            // Truncate if too long
+            foreach (var para in topParagraphs)
+            {
+                string cleanedPara = this.CleanMarkdown(para.Text).Trim();
+
+                if (!string.IsNullOrWhiteSpace(cleanedPara))
+                {
+                    snippetBuilder.AppendLine(cleanedPara);
+                    snippetBuilder.AppendLine(); // Add spacing between paragraphs
+                }
+
+                // Stop if we've reached a good length
+                if (snippetBuilder.Length >= maxLength)
+                    break;
+            }
+
+            string snippet = snippetBuilder.ToString().Trim();
+
+            // Truncate if still too long
             if (snippet.Length > maxLength)
             {
                 snippet = snippet.Substring(0, maxLength);
@@ -439,7 +467,43 @@ namespace StardewGPT.Services
                 }
             }
 
-            return snippet.Trim();
+            return snippet;
+        }
+
+        /// <summary>Score a paragraph's relevance based on query terms and structure.</summary>
+        private double ScoreParagraphRelevance(string paragraph, string[] queryTerms)
+        {
+            double score = 0.0;
+            string lowerPara = paragraph.ToLower();
+
+            // Base score: count of query term matches
+            foreach (var term in queryTerms)
+            {
+                int matches = Regex.Matches(lowerPara, Regex.Escape(term)).Count;
+                score += matches;
+            }
+
+            // Prioritize structured data (tables) - give massive boost
+            if (paragraph.Contains("|") && paragraph.Split('\n').Count(line => line.Contains("|")) >= 3)
+            {
+                score *= 3.0; // Triple score for tables
+            }
+
+            // Boost for paragraphs with location/spawn keywords
+            if (lowerPara.Contains("floor") || lowerPara.Contains("spawn") ||
+                lowerPara.Contains("found") || lowerPara.Contains("location") ||
+                lowerPara.Contains("mine") || lowerPara.Contains("level"))
+            {
+                score *= 1.5;
+            }
+
+            // Boost for paragraphs with specific numbers (often indicate floors/levels)
+            if (Regex.IsMatch(paragraph, @"\b\d+-\d+\b")) // Patterns like "41-79"
+            {
+                score *= 1.3;
+            }
+
+            return score;
         }
 
         /// <summary>Clean markdown formatting from text.</summary>
