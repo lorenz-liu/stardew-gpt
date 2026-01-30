@@ -1,6 +1,6 @@
 # StardewGPT
 
-StardewGPT is the in-game ChatGPT-like AI assistant for Stardew Valley, built with the latest foundational model and a contextual knowledge base of the game and your game stats. 
+StardewGPT is an in-game ChatGPT-like AI assistant for Stardew Valley, built with the latest foundational model and a contextual knowledge base of the game and your game stats. 
 
 ## Quick Start
 

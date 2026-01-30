@@ -1,0 +1,11 @@
+# Foraging/Skill
+
+| Level 1 | Level 2 | Level 3 | Level 4 | Level 5 | |
+| --- | --- | --- | --- | --- | --- |
+| *Crafting Recipes:* | *Crafting Recipes:* | *Crafting / Cooking Recipes:* | *Crafting Recipes:* | *Choose a Profession:* | |
+| Spring Seeds.png [Wild Seeds (Sp)](/Spring_Seeds "Spring Seeds")Field Snack.png [Field Snack](/Field_Snack "Field Snack")  * Trees sometimes drop seeds. | Charcoal Kiln.png [Charcoal Kiln](/Charcoal_Kiln "Charcoal Kiln") | Cookout Kit.png [Cookout Kit](/Cookout_Kit "Cookout Kit")Moss Soup.png [Moss Soup](/Moss_Soup "Moss Soup") | Summer Seeds.png [Wild Seeds (Su)](/Summer_Seeds "Summer Seeds")Tapper.png [Tapper](/Tapper "Tapper") Mushroom Log.png [Mushroom Log](/Mushroom_Log "Mushroom Log")  * +1 Wild Berry harvesting | Forester.png **Forester** Trees drop 25% more wood.  (Applies to [Trees](/Trees "Trees"), [Stumps](/Large_Stump "Large Stump") & [Logs](/Large_Log "Large Log")) | Gatherer.png **Gatherer** Chance for double harvest of foraged items.  (20% chance of double harvest) |
+|  | | | | | |
+| Level 6 | Level 7 | Level 8 | Level 9 | Level 10 | |
+| *Crafting Recipes:* | *Crafting Recipes:* | *Crafting / Cooking Recipes:* | *Crafting Recipes:* | *Forester:* | *Gatherer:* |
+| Lightning Rod.png [Lightning Rod](/Lightning_Rod "Lightning Rod")Fall Seeds.png [Wild Seeds (Fa)](/Fall_Seeds "Fall Seeds") Warp Totem Beach.png [Warp Totem: Beach](/Warp_Totem:_Beach "Warp Totem: Beach") | Winter Seeds.png [Wild Seeds (Wi)](/Winter_Seeds "Winter Seeds") Warp Totem Mountains.png [Warp Totem: Mountains](/Warp_Totem:_Mountains "Warp Totem: Mountains") Tree Fertilizer.png [Tree Fertilizer](/Tree_Fertilizer "Tree Fertilizer") | Survival Burger.png [Survival Burger](/Survival_Burger "Survival Burger") Warp Totem Farm.png [Warp Totem: Farm](/Warp_Totem:_Farm "Warp Totem: Farm") Tent Kit.png [Tent Kit](/Tent_Kit "Tent Kit")   * +1 Wild Berry harvesting | Rain Totem.png [Rain Totem](/Rain_Totem "Rain Totem") | Lumberjack.png **Lumberjack** All trees have a chance to drop [hardwood](/Hardwood "Hardwood"). | Botanist.png **Botanist** Foraged items are always highest quality. |
+| Tapper Icon.png **Tapper** [Syrups](/Tapper#Products "Tapper") worth 25% more. | Tracker.png **Tracker** Location of forageable items revealed. |
