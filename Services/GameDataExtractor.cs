@@ -50,7 +50,6 @@ namespace StardewGPT.Services
             }
 
             var sb = new StringBuilder();
-            string lowerQuestion = question.ToLower();
 
             try
             {
@@ -59,67 +58,56 @@ namespace StardewGPT.Services
                 sb.AppendLine($"Player: {Game1.player.Name}, Money: {Game1.player.Money}g");
                 sb.AppendLine();
 
-                // Check for specific topics
-                if (lowerQuestion.Contains("skill") || lowerQuestion.Contains("level"))
-                {
-                    sb.AppendLine("Player Skills:");
-                    sb.AppendLine($"- Farming: Level {Game1.player.farmingLevel}");
-                    sb.AppendLine($"- Fishing: Level {Game1.player.fishingLevel}");
-                    sb.AppendLine($"- Foraging: Level {Game1.player.foragingLevel}");
-                    sb.AppendLine($"- Mining: Level {Game1.player.miningLevel}");
-                    sb.AppendLine($"- Combat: Level {Game1.player.combatLevel}");
-                    sb.AppendLine();
-                }
+                // Player Skills
+                sb.AppendLine("Player Skills:");
+                sb.AppendLine($"- Farming: Level {Game1.player.farmingLevel}");
+                sb.AppendLine($"- Fishing: Level {Game1.player.fishingLevel}");
+                sb.AppendLine($"- Foraging: Level {Game1.player.foragingLevel}");
+                sb.AppendLine($"- Mining: Level {Game1.player.miningLevel}");
+                sb.AppendLine($"- Combat: Level {Game1.player.combatLevel}");
+                sb.AppendLine();
 
-                if (lowerQuestion.Contains("inventory") || lowerQuestion.Contains("item") || lowerQuestion.Contains("have"))
+                // Current Inventory
+                sb.AppendLine("Current Inventory:");
+                var items = Game1.player.Items.Where(item => item != null);
+                foreach (var item in items)
                 {
-                    sb.AppendLine("Current Inventory:");
-                    var items = Game1.player.Items.Where(item => item != null).Take(15);
-                    foreach (var item in items)
-                    {
-                        sb.AppendLine($"- {item.DisplayName} x{item.Stack}");
-                    }
-                    sb.AppendLine();
+                    sb.AppendLine($"- {item.DisplayName} x{item.Stack}");
                 }
+                sb.AppendLine();
 
-                if (lowerQuestion.Contains("friend") || lowerQuestion.Contains("relationship") || lowerQuestion.Contains("villager") || lowerQuestion.Contains("heart"))
+                // Friendships
+                sb.AppendLine("Friendships:");
+                var friendships = Game1.player.friendshipData.Pairs.OrderByDescending(f => f.Value.Points);
+                foreach (var friendship in friendships)
                 {
-                    sb.AppendLine("Friendships:");
-                    var friendships = Game1.player.friendshipData.Pairs.OrderByDescending(f => f.Value.Points).Take(10);
-                    foreach (var friendship in friendships)
-                    {
-                        int hearts = friendship.Value.Points / 250;
-                        sb.AppendLine($"- {friendship.Key}: {hearts} hearts");
-                    }
-                    sb.AppendLine();
+                    int hearts = friendship.Value.Points / 250;
+                    sb.AppendLine($"- {friendship.Key}: {hearts} hearts");
                 }
+                sb.AppendLine();
 
-                if (lowerQuestion.Contains("crop") || lowerQuestion.Contains("farm") || lowerQuestion.Contains("plant"))
+                // Farm Info
+                if (Game1.getFarm() is Farm farm)
                 {
-                    if (Game1.getFarm() is Farm farm)
+                    int cropCount = 0;
+                    foreach (var terrainFeature in farm.terrainFeatures.Values)
                     {
-                        int cropCount = 0;
-                        foreach (var terrainFeature in farm.terrainFeatures.Values)
+                        if (terrainFeature is HoeDirt dirt && dirt.crop != null)
                         {
-                            if (terrainFeature is HoeDirt dirt && dirt.crop != null)
-                            {
-                                cropCount++;
-                            }
+                            cropCount++;
                         }
-                        sb.AppendLine($"Farm Info:");
-                        sb.AppendLine($"- Growing Crops: {cropCount}");
-                        sb.AppendLine($"- Buildings: {farm.buildings.Count}");
-                        sb.AppendLine();
                     }
-                }
-
-                if (lowerQuestion.Contains("quest"))
-                {
-                    sb.AppendLine("Quests:");
-                    sb.AppendLine($"- Active: {Game1.player.questLog.Count(q => !q.completed.Value)}");
-                    sb.AppendLine($"- Completed: {Game1.player.questLog.Count(q => q.completed.Value)}");
+                    sb.AppendLine($"Farm Info:");
+                    sb.AppendLine($"- Growing Crops: {cropCount}");
+                    sb.AppendLine($"- Buildings: {farm.buildings.Count}");
                     sb.AppendLine();
                 }
+
+                // Quests
+                sb.AppendLine("Quests:");
+                sb.AppendLine($"- Active: {Game1.player.questLog.Count(q => !q.completed.Value)}");
+                sb.AppendLine($"- Completed: {Game1.player.questLog.Count(q => q.completed.Value)}");
+                sb.AppendLine();
 
             }
             catch (Exception ex)
