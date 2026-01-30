@@ -24,4 +24,11 @@
       <Link>config.json</Link>
     </None>
   </ItemGroup>
+
+  <ItemGroup>
+    <None Include="KnowledgeBase\**\*">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <Link>KnowledgeBase\%(RecursiveDir)%(Filename)%(Extension)</Link>
+    </None>
+  </ItemGroup>
 </Project>

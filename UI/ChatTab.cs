@@ -20,7 +20,7 @@ namespace StardewGPT.UI
 
         // UI Layout constants
         private const int Padding = 32;
-        private const int TopPadding = 64; // Extra padding for dialogue box border
+        private const int TopPadding = 96; // Extra padding for dialogue box border
         private const int InputBoxHeight = 48;
         private const int MessageSpacing = 12;
         private const int MessagePadding = 12;
@@ -286,27 +286,62 @@ namespace StardewGPT.UI
         /// <summary>Wrap text to fit within a specified width.</summary>
         private string WrapText(string text, int maxWidth, SpriteFont font)
         {
-            string[] words = text.Split(' ');
             StringBuilder result = new StringBuilder();
             StringBuilder currentLine = new StringBuilder();
 
-            foreach (string word in words)
+            // Split by spaces first to handle English words
+            string[] segments = text.Split(' ');
+
+            for (int i = 0; i < segments.Length; i++)
             {
-                string testLine = currentLine.Length == 0 ? word : $"{currentLine} {word}";
-                if (font.MeasureString(testLine).X > maxWidth)
+                string segment = segments[i];
+                bool isLastSegment = i == segments.Length - 1;
+
+                // If segment is empty, skip it
+                if (string.IsNullOrEmpty(segment))
+                    continue;
+
+                // Try to add the whole segment with space
+                string testLine = currentLine.Length == 0 ? segment : $"{currentLine} {segment}";
+                float testWidth = font.MeasureString(testLine).X;
+
+                if (testWidth <= maxWidth)
                 {
+                    // Segment fits, add it
+                    if (currentLine.Length > 0)
+                        currentLine.Append(" ");
+                    currentLine.Append(segment);
+                }
+                else
+                {
+                    // Segment doesn't fit
+                    // If current line has content, start a new line
                     if (currentLine.Length > 0)
                     {
                         result.AppendLine(currentLine.ToString());
                         currentLine.Clear();
                     }
-                    currentLine.Append(word);
-                }
-                else
-                {
-                    if (currentLine.Length > 0)
-                        currentLine.Append(" ");
-                    currentLine.Append(word);
+
+                    // Check if the segment itself is too long and needs character-by-character wrapping
+                    if (font.MeasureString(segment).X > maxWidth)
+                    {
+                        // Break segment character by character
+                        foreach (char c in segment)
+                        {
+                            string testChar = currentLine.ToString() + c;
+                            if (font.MeasureString(testChar).X > maxWidth && currentLine.Length > 0)
+                            {
+                                result.AppendLine(currentLine.ToString());
+                                currentLine.Clear();
+                            }
+                            currentLine.Append(c);
+                        }
+                    }
+                    else
+                    {
+                        // Segment fits on its own line
+                        currentLine.Append(segment);
+                    }
                 }
             }
 
