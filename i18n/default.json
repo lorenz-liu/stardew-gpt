@@ -4,5 +4,5 @@
   "chat.placeholder": "Ask me about Stardew Valley...",
   "error.non_stardew": "I'm just an old farmer from Stardew Valley, I don't know things outside the village...",
   "error.api": "Sorry, I'm having trouble thinking right now. Please try again later.",
-  "error.invalid_api_key": "It seems you have used an invalid API key. Have you forgotten to modify the config.json file?"
+  "error.invalid_api_key": "It seems you have used an invalid API key. Have you forgotten to modify the config.json file? Read the README file for more information. "
 }
