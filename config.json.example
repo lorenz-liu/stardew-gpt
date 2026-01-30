@@ -1,8 +1,8 @@
 {
   "ApiEndpoint": "https://api.groq.com/openai/v1/chat/completions",
-  "ApiKey": "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",
+  "ApiKey": "REPLACE_WITH_YOUR_GROQ_API",
   "Model": "openai/gpt-oss-120b",
   "MaxTokens": 500,
-  "Temperature": 0.7,
+  "Temperature": 0.8,
   "OpenChatKey": "K"
 }
