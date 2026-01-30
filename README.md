@@ -13,7 +13,7 @@ StardewGPT is the in-game ChatGPT-like AI assistant for Stardew Valley, built wi
   "Model": "openai/gpt-oss-120b",
   "MaxTokens": 500,
   "Temperature": 0.8,
-  "OpenChatKey": "K"
+  "OpenChatKey": "K" <- Press K to open chat in game
 }
 ```
 
@@ -49,7 +49,7 @@ GG Have fun!
   "Model": "openai/gpt-oss-120b",
   "MaxTokens": 500,
   "Temperature": 0.8,
-  "OpenChatKey": "K"
+  "OpenChatKey": "K" <- 按K唤起对话框
 }
 ```
 
