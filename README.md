@@ -1,3 +1,5 @@
+> This project includes scraped data from [Stardew Valley Wiki](https://stardewvalleywiki.com/Stardew_Valley_Wiki), which is licensed under CC-BY-NC-SA 4.0. Consequently, this software and its source code are also licensed under CC-BY-NC-SA 4.0.
+
 # StardewGPT
 
 StardewGPT is an in-game ChatGPT-like AI assistant for Stardew Valley, built with the latest foundational model and a contextual knowledge base of the game and your game stats. 
