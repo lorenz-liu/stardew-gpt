@@ -2,6 +2,7 @@
   "chat.welcome": "老乡好！我是一个熟知星露谷一切的老农民。问我任何关于农场、村民或山谷的问题吧！",
   "chat.thinking": "思考中...",
   "chat.placeholder": "问我关于星露谷的问题...",
+  "chat.clear_history": "清除历史记录",
   "error.non_stardew": "我只是一个星露谷的老农民，搞不懂村子外面的事情...",
   "error.api": "抱歉，我现在有点想不起来了。请稍后再试。",
   "error.invalid_api_key": "看起来你使用了无效的 API 密钥...老乡你是不是忘记修改 config.json 文件了？记得读一读README喔！"

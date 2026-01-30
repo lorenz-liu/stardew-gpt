@@ -52,8 +52,8 @@ namespace StardewGPT.UI
 
             // Create clear history button in top-right corner (inside the content area)
             // Use the same padding as the message area for consistent positioning
-            int buttonX = xPositionOnScreen + width - ButtonSize - Padding - 20; // Align with content area
-            int buttonY = yPositionOnScreen + TopPadding - 20; // Just inside the top content area
+            int buttonX = xPositionOnScreen + width - ButtonSize - Padding; // Align with content area
+            int buttonY = yPositionOnScreen + TopPadding + 15; // Just inside the top content area
             this.clearHistoryButton = new ClickableTextureComponent(
                 new Rectangle(buttonX, buttonY, ButtonSize, ButtonSize),
                 Game1.mouseCursors,
@@ -370,7 +370,7 @@ namespace StardewGPT.UI
             {
                 IClickableMenu.drawHoverText(
                     b,
-                    "Clear History",
+                    ModEntry.I18n!.Get("chat.clear_history"),
                     Game1.smallFont
                 );
             }
