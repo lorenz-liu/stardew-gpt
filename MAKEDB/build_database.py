@@ -34,6 +34,13 @@ class BGEm3EmbeddingClient:
 
     def get_embedding(self, text: str, retry_count: int = 3) -> Optional[List[float]]:
         """Get 1024-dimensional embedding from bge-m3 model."""
+        # Preprocess text
+        text = self._preprocess_text(text)
+
+        if not text:
+            print("Warning: Empty text after preprocessing")
+            return None
+
         for attempt in range(retry_count):
             try:
                 payload = {"text": [text]}
@@ -49,7 +56,7 @@ class BGEm3EmbeddingClient:
 
                     return embedding
                 else:
-                    print(f"API Error (attempt {attempt + 1}/{retry_count}): {response.status_code} - {response.text}")
+                    print(f"API Error (attempt {attempt + 1}/{retry_count}): {response.status_code} - {response.text[:200]}")
                     if attempt < retry_count - 1:
                         time.sleep(2 ** attempt)  # Exponential backoff
 
@@ -59,6 +66,22 @@ class BGEm3EmbeddingClient:
                     time.sleep(2 ** attempt)
 
         return None
+
+    def _preprocess_text(self, text: str) -> str:
+        """Preprocess text for embedding."""
+        # Remove null bytes and other problematic characters
+        text = text.replace('\x00', '').replace('\r', ' ')
+
+        # Normalize whitespace
+        text = ' '.join(text.split())
+
+        # Truncate to max length (bge-m3 supports up to 8192 tokens, ~32k chars)
+        # Use conservative limit of 10k chars to be safe
+        max_chars = 10000
+        if len(text) > max_chars:
+            text = text[:max_chars] + "..."
+
+        return text.strip()
 
     def get_embeddings_batch(self, texts: List[str], batch_size: int = 10) -> List[Optional[List[float]]]:
         """Get embeddings for multiple texts with rate limiting."""
@@ -235,13 +258,17 @@ def main():
     batch = []
 
     for i, (title, content) in enumerate(entries):
+        # Show progress
+        print(f"[{i + 1}/{len(entries)}] Processing: {title} ({len(content)} chars)")
+
         # Generate embedding
         embedding = embedding_client.get_embedding(content)
 
         if embedding:
             batch.append((title, content, embedding))
+            print(f"  ✓ Embedding generated successfully")
         else:
-            print(f"Failed to generate embedding for '{title}'")
+            print(f"  ✗ Failed to generate embedding for '{title}'")
 
         # Insert batch when full
         if len(batch) >= args.batch_size:
