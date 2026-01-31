@@ -1,8 +1,8 @@
 {
   "CloudflareAccountId": "YOUR_CLOUDFLARE_ACCOUNT_ID",
   "ApiKey": "YOUR_CLOUDFLARE_API_TOKEN",
-  "ApiEndpoint": "https://api.cloudflare.com/client/v4/accounts/{account_id}/ai/run/@cf/meta/llama-3.1-8b-instruct",
-  "Model": "@cf/meta/llama-3.1-8b-instruct",
+  "ApiEndpoint": "https://api.cloudflare.com/client/v4/accounts/{account_id}/ai/run/@cf/openai/gpt-oss-120b",
+  "Model": "@cf/openai/gpt-oss-120b",
   "MaxTokens": 800,
   "Temperature": 0.3,
   "OpenChatKey": "K"

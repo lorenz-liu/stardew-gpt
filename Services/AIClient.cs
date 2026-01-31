@@ -77,6 +77,9 @@ namespace StardewGPT.Services
                 HttpResponseMessage response = await this.httpClient.SendAsync(request);
                 string responseContent = await response.Content.ReadAsStringAsync();
 
+                this.monitor.Log($"API Response Status: {response.StatusCode}", LogLevel.Debug);
+                this.monitor.Log($"API Response Content (first 500 chars): {responseContent.Substring(0, Math.Min(500, responseContent.Length))}", LogLevel.Debug);
+
                 if (!response.IsSuccessStatusCode)
                 {
                     this.monitor.Log($"API error: {response.StatusCode} - {responseContent}", LogLevel.Error);
@@ -106,14 +109,23 @@ namespace StardewGPT.Services
 
                 // Parse response
                 JObject responseJson = JObject.Parse(responseContent);
-                string? aiResponse = responseJson["choices"]?[0]?["message"]?["content"]?.ToString();
+
+                // Try Cloudflare Workers AI format first: result.response
+                string? aiResponse = responseJson["result"]?["response"]?.ToString();
+
+                // Fallback to OpenAI format: choices[0].message.content
+                if (string.IsNullOrEmpty(aiResponse))
+                {
+                    aiResponse = responseJson["choices"]?[0]?["message"]?["content"]?.ToString();
+                }
 
                 if (string.IsNullOrEmpty(aiResponse))
                 {
+                    this.monitor.Log($"Could not find response in API output. Full response: {responseContent}", LogLevel.Error);
                     throw new Exception("Empty response from API");
                 }
 
-                this.monitor.Log($"Received response from API", LogLevel.Debug);
+                this.monitor.Log($"Received response from API (length: {aiResponse.Length})", LogLevel.Debug);
                 return aiResponse;
             }
             catch (Exception ex)
@@ -211,14 +223,23 @@ namespace StardewGPT.Services
 
                 // Parse response
                 JObject responseJson = JObject.Parse(responseContent);
-                string? aiResponse = responseJson["choices"]?[0]?["message"]?["content"]?.ToString();
+
+                // Try Cloudflare Workers AI format first: result.response
+                string? aiResponse = responseJson["result"]?["response"]?.ToString();
+
+                // Fallback to OpenAI format: choices[0].message.content
+                if (string.IsNullOrEmpty(aiResponse))
+                {
+                    aiResponse = responseJson["choices"]?[0]?["message"]?["content"]?.ToString();
+                }
 
                 if (string.IsNullOrEmpty(aiResponse))
                 {
+                    this.monitor.Log($"Could not find response in API output", LogLevel.Error);
                     throw new Exception("Empty response from API");
                 }
 
-                this.monitor.Log($"Received response from API", LogLevel.Debug);
+                this.monitor.Log($"Received response from API (length: {aiResponse.Length})", LogLevel.Debug);
                 return aiResponse;
             }
             catch (Exception ex)
