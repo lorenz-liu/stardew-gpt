@@ -2,7 +2,7 @@
 
 > This project includes scraped data from [Stardew Valley Wiki](https://stardewvalleywiki.com/Stardew_Valley_Wiki), which is licensed under Attribution-NonCommercial-ShareAlike 3.0 Unported (CC BY-NC-SA 3.0). Consequently, this software and its source code are also licensed under CC BY-NC-SA 3.0. The source code is open sources at [GitHub](https://github.com/lorenz-liu/stardew-gpt).
 
-StardewGPT is an in-game chatbot for Stardew Valley, built with vector-based semantic search. It can answer questions about the game and provide personalized advice based on your current game state.
+StardewGPT is an in-game AI assistant for Stardew Valley, built with vector-based semantic search and powered by Cloudflare Workers AI. It can answer questions about the game and provide personalized advice based on your current game state.
 
 ## Quick Start
 
@@ -10,10 +10,10 @@ StardewGPT is an in-game chatbot for Stardew Valley, built with vector-based sem
 
 ```json
 {
-  "CloudflareAccountId": "YOUR_CLOUDFLARE_ACCOUNT_ID",
-  "ApiKey": "YOUR_CLOUDFLARE_API_TOKEN",
-  "ApiEndpoint": "https://api.cloudflare.com/client/v4/accounts/{account_id}/ai/run/@cf/meta/llama-3.1-8b-instruct",
-  "Model": "@cf/meta/llama-3.1-8b-instruct",
+  "CloudflareAccountId": "YOUR_CLOUDFLARE_ACCOUNT_ID", <- REPLACE
+  "ApiKey": "YOUR_CLOUDFLARE_API_TOKEN", <- REPLACE
+  "ApiEndpoint": "https://api.cloudflare.com/client/v4/accounts/{account_id}/ai/run/@cf/openai/gpt-oss-120b",
+  "Model": "@cf/openai/gpt-oss-120b",
   "MaxTokens": 800,
   "Temperature": 0.3,
   "OpenChatKey": "K"
@@ -34,7 +34,7 @@ StardewGPT is an in-game chatbot for Stardew Valley, built with vector-based sem
 
 **Why Cloudflare?**
 - ✅ **Free tier**: 10,000 requests per day
-- ✅ **Global availability**: Works in China and worldwide
+- ✅ **Global availability**: Works worldwide
 - ✅ **Single API key**: One token for both LLM and embeddings
 - ✅ **Fast**: Powered by Cloudflare's global network
 
@@ -90,7 +90,7 @@ or simply:
 
 # 中文
 
-StardewGPT 是《星露谷物语》的游戏内聊天机器人，基于向量语义搜索构建。它可以回答关于游戏的问题，并根据你当前的游戏数据及状态提供个性化建议。
+StardewGPT 是《星露谷物语》的游戏内 AI 助手，基于向量语义搜索构建，由 Cloudflare Workers AI 驱动。它可以回答关于游戏的问题，并根据你当前的游戏状态提供个性化建议。
 
 ## 快速开始
 
@@ -98,10 +98,10 @@ StardewGPT 是《星露谷物语》的游戏内聊天机器人，基于向量语
 
 ```json
 {
-  "CloudflareAccountId": "你的_CLOUDFLARE_账户ID",
-  "ApiKey": "你的_CLOUDFLARE_API令牌",
-  "ApiEndpoint": "https://api.cloudflare.com/client/v4/accounts/{account_id}/ai/run/@cf/meta/llama-3.1-8b-instruct",
-  "Model": "@cf/meta/llama-3.1-8b-instruct",
+  "CloudflareAccountId": "你的_CLOUDFLARE_账户ID", <- 替换
+  "ApiKey": "你的_CLOUDFLARE_API令牌", <- 替换
+  "ApiEndpoint": "https://api.cloudflare.com/client/v4/accounts/{account_id}/ai/run/@cf/openai/gpt-oss-120b",
+  "Model": "@cf/openai/gpt-oss-120b",
   "MaxTokens": 800,
   "Temperature": 0.3,
   "OpenChatKey": "K"
