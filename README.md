@@ -2,7 +2,7 @@
 
 > This project includes scraped data from [Stardew Valley Wiki](https://stardewvalleywiki.com/Stardew_Valley_Wiki), which is licensed under Attribution-NonCommercial-ShareAlike 3.0 Unported (CC BY-NC-SA 3.0). Consequently, this software and its source code are also licensed under CC BY-NC-SA 3.0. The source code is open sources at [GitHub](https://github.com/lorenz-liu/stardew-gpt).
 
-StardewGPT is an in-game AI assistant for Stardew Valley, built with vector-based semantic search and powered by Cloudflare Workers AI. It can answer questions about the game and provide personalized advice based on your current game state. 
+StardewGPT is an in-game chatbot for Stardew Valley, built with vector-based semantic search. It can answer questions about the game and provide personalized advice based on your current game state.
 
 ## Quick Start
 
@@ -49,17 +49,48 @@ StardewGPT is an in-game AI assistant for Stardew Valley, built with vector-base
 or simply:
 * "What should I do today?"
 
-## Features
+## Project Structure
 
-- 🤖 **Smart AI Assistant**: Powered by Llama 3.1 8B via Cloudflare Workers AI
-- 🔍 **Semantic Search**: 170K+ wiki entries with vector-based retrieval
-- 🎮 **Game-Aware**: Reads your current game state (inventory, skills, relationships, etc.)
-- 💬 **Conversation History**: Remembers context across multiple questions
-- 🌍 **Global Access**: Works worldwide
+```
+├── ModEntry.cs              # Main mod entry point, initializes services
+├── ModConfig.cs             # Configuration model for mod settings
+├── manifest.json            # SMAPI mod manifest
+├── config.json.example      # Example API configuration template
+├── StardewGPT.csproj        # C# project file
+├── knowledge.db             # Merged vector database (CN+EN)
+├── knowledge_cn.db          # Chinese wiki vector database
+├── knowledge_en.db          # English wiki vector database
+├── Services/                # Core service implementations
+│   ├── AIClient.cs          # Cloudflare AI API client
+│   ├── EmbeddingClient.cs   # Text embedding generation
+│   ├── VectorDatabaseService.cs  # SQLite vector search
+│   ├── RAGOrchestrator.cs   # RAG pipeline coordinator
+│   ├── GameDataExtractor.cs # Extracts current game state
+│   ├── ChatHistoryManager.cs # Manages conversation context
+│   └── SQLiteNative.cs      # Native SQLite bindings
+├── UI/
+│   └── ChatTab.cs           # In-game chat interface
+├── DataTypes/
+│   └── ChatMessage.cs       # Chat message data model
+├── MAKEDB/                  # Database building tools
+│   ├── scrape_wiki_en.py    # Scrapes English wiki
+│   ├── scrape_wiki_cn.py    # Scrapes Chinese wiki
+│   ├── build_database.py    # Builds vector database
+│   ├── merge_db.py          # Merges CN+EN databases
+│   ├── build_en.sh          # Build script for EN
+│   ├── build_cn.sh          # Build script for CN
+│   └── config.env.example   # Environment config template
+├── i18n/                    # Localization files
+│   ├── default.json         # English translations
+│   └── zh.json              # Chinese translations
+└── runtimes/                # Native SQLite libraries
+```
 
 ---
 
 # 中文
+
+StardewGPT 是《星露谷物语》的游戏内聊天机器人，基于向量语义搜索构建。它可以回答关于游戏的问题，并根据你当前的游戏数据及状态提供个性化建议。
 
 ## 快速开始
 
@@ -105,11 +136,3 @@ or simply:
 
 或者直接：
 * "我今天该做什么？"
-
-## 功能特性
-
-- 🤖 **智能 AI 助手**：由 Cloudflare Workers AI 提供的 Llama 3.1 8B 驱动
-- 🔍 **语义搜索**：170K+ 维基条目，基于向量的检索
-- 🎮 **游戏感知**：读取你当前的游戏状态（背包、技能、好感度等）
-- 💬 **对话历史**：跨多个问题记住上下文
-- 🌍 **全球访问**：全球直连可用，包括中国大陆
