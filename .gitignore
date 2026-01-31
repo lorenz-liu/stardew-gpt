@@ -4,6 +4,7 @@ DB_MAKER/
 bin/
 obj/
 *.dll
+!runtimes/**
 *.pdb
 
 ## Visual Studio
