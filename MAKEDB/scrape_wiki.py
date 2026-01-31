@@ -70,12 +70,11 @@ class StardewWikiScraper:
         return pages
 
     def get_page_content(self, title: str) -> Dict[str, str]:
-        """Get page content using MediaWiki API."""
+        """Get page content using MediaWiki parse API."""
         params = {
-            "action": "query",
-            "titles": title,
-            "prop": "extracts",
-            "explaintext": True,
+            "action": "parse",
+            "page": title,
+            "prop": "text",
             "format": "json"
         }
 
@@ -83,13 +82,33 @@ class StardewWikiScraper:
             response = self.session.get(self.api_url, params=params, timeout=30)
             data = response.json()
 
-            pages = data.get("query", {}).get("pages", {})
-            for page_id, page_data in pages.items():
-                if page_id != "-1":  # Page exists
-                    content = page_data.get("extract", "").strip()
+            # Check for errors
+            if "error" in data:
+                return None
+
+            # Extract HTML content
+            if "parse" in data and "text" in data["parse"]:
+                html_content = data["parse"]["text"]["*"]
+
+                # Parse HTML and extract text
+                soup = BeautifulSoup(html_content, 'html.parser')
+
+                # Remove script and style elements
+                for script in soup(["script", "style"]):
+                    script.decompose()
+
+                # Get text and clean it up
+                text = soup.get_text()
+
+                # Clean up whitespace
+                lines = (line.strip() for line in text.splitlines())
+                chunks = (phrase.strip() for line in lines for phrase in line.split("  "))
+                text = ' '.join(chunk for chunk in chunks if chunk)
+
+                if text:
                     return {
                         "title": title,
-                        "content": content
+                        "content": text
                     }
 
         except Exception as e:
