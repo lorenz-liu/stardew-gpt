@@ -159,9 +159,9 @@ namespace StardewGPT.Services
                 throw new InvalidOperationException("Database not initialized. Call Initialize() first.");
             }
 
-            if (queryVector.Length != 256)
+            if (queryVector.Length != 1024)
             {
-                throw new ArgumentException($"Query vector must be 256-dimensional, got {queryVector.Length}", nameof(queryVector));
+                throw new ArgumentException($"Query vector must be 1024-dimensional, got {queryVector.Length}", nameof(queryVector));
             }
 
             try
@@ -195,14 +195,14 @@ namespace StardewGPT.Services
                     IntPtr blobPtr = SQLiteNative.sqlite3_column_blob(stmt, 2);
                     int blobSize = SQLiteNative.sqlite3_column_bytes(stmt, 2);
 
-                    if (blobSize != 1024) // 256 floats * 4 bytes
+                    if (blobSize != 4096) // 1024 floats * 4 bytes
                     {
                         continue;
                     }
 
                     // Convert to float array
-                    float[] dbVector = new float[256];
-                    Marshal.Copy(blobPtr, dbVector, 0, 256);
+                    float[] dbVector = new float[1024];
+                    Marshal.Copy(blobPtr, dbVector, 0, 1024);
 
                     // Calculate cosine similarity
                     double similarity = CosineSimilarity(queryVector, dbVector);

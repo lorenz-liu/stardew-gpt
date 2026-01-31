@@ -27,7 +27,7 @@ namespace StardewGPT.Services
 
         /// <summary>Get embedding vector from Cloudflare Workers AI.</summary>
         /// <param name="text">The text to embed.</param>
-        /// <returns>768-dimensional embedding vector from bge-base-en-v1.5.</returns>
+        /// <returns>1024-dimensional embedding vector from bge-m3.</returns>
         public async Task<float[]> GetEmbeddingAsync(string text)
         {
             try
@@ -37,8 +37,8 @@ namespace StardewGPT.Services
                     throw new ArgumentException("Text cannot be empty", nameof(text));
                 }
 
-                // Cloudflare Workers AI endpoint
-                string embeddingUrl = $"https://api.cloudflare.com/client/v4/accounts/{this.config.CloudflareAccountId}/ai/run/@cf/baai/bge-base-en-v1.5";
+                // Cloudflare Workers AI endpoint for bge-m3 (multilingual, 1024 dimensions)
+                string embeddingUrl = $"https://api.cloudflare.com/client/v4/accounts/{this.config.CloudflareAccountId}/ai/run/@cf/baai/bge-m3";
 
                 // Prepare request payload
                 var requestBody = new
@@ -70,14 +70,14 @@ namespace StardewGPT.Services
                 JObject responseJson = JObject.Parse(responseContent);
                 JArray? embeddingArray = responseJson["result"]?["data"]?[0] as JArray;
 
-                if (embeddingArray == null || embeddingArray.Count != 768)
+                if (embeddingArray == null || embeddingArray.Count != 1024)
                 {
-                    throw new Exception($"Invalid embedding response: expected 768 dimensions, got {embeddingArray?.Count ?? 0}");
+                    throw new Exception($"Invalid embedding response: expected 1024 dimensions, got {embeddingArray?.Count ?? 0}");
                 }
 
                 // Convert to float array
-                float[] embedding = new float[768];
-                for (int i = 0; i < 768; i++)
+                float[] embedding = new float[1024];
+                for (int i = 0; i < 1024; i++)
                 {
                     embedding[i] = embeddingArray[i].Value<float>();
                 }
@@ -92,28 +92,12 @@ namespace StardewGPT.Services
             }
         }
 
-        /// <summary>Reduce 768-dimensional vector to 256 dimensions.</summary>
-        /// <param name="fullVector">The full 768-dimensional vector.</param>
-        /// <returns>Reduced 256-dimensional vector.</returns>
-        public float[] ReduceDimensions(float[] fullVector)
-        {
-            if (fullVector.Length != 768)
-            {
-                throw new ArgumentException($"Expected 768 dimensions, got {fullVector.Length}", nameof(fullVector));
-            }
-
-            float[] reducedVector = new float[256];
-            Array.Copy(fullVector, 0, reducedVector, 0, 256);
-            return reducedVector;
-        }
-
-        /// <summary>Get reduced 256-dimensional embedding for query.</summary>
+        /// <summary>Get 1024-dimensional embedding for query.</summary>
         /// <param name="query">The query text.</param>
-        /// <returns>256-dimensional embedding vector.</returns>
+        /// <returns>1024-dimensional embedding vector.</returns>
         public async Task<float[]> GetQueryEmbeddingAsync(string query)
         {
-            float[] fullVector = await this.GetEmbeddingAsync(query);
-            return this.ReduceDimensions(fullVector);
+            return await this.GetEmbeddingAsync(query);
         }
     }
 }

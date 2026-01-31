@@ -1,0 +1,20 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+
+# Data files
+wiki_data/
+*.db
+*.json
+
+# Configuration
+config.env
+
+# Logs
+*.log
