@@ -57,11 +57,15 @@ namespace StardewGPT
                     this.Config.ApiEndpoint = this.Config.ApiEndpoint.Replace("{account_id}", this.Config.CloudflareAccountId);
                 }
 
+                // Detect language from game locale
+                string language = this.Helper.Translation.Locale;
+                this.Monitor.Log($"Detected game language: {language}", LogLevel.Info);
+
                 // Create service instances
                 this.aiClient = new AIClient(this.Config!, this.Monitor);
                 this.gameDataExtractor = new GameDataExtractor(this.Monitor);
                 this.embeddingClient = new EmbeddingClient(this.Config!, this.Monitor);
-                this.vectorDatabase = new VectorDatabaseService(this.Monitor, this.Helper.DirectoryPath);
+                this.vectorDatabase = new VectorDatabaseService(this.Monitor, this.Helper.DirectoryPath, language);
                 this.chatHistoryManager = new ChatHistoryManager(this.Helper.DirectoryPath, this.Monitor);
 
                 // Initialize vector database

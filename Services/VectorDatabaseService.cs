@@ -20,13 +20,24 @@ namespace StardewGPT.Services
     {
         private readonly IMonitor monitor;
         private readonly string databasePath;
+        private readonly string databaseName;
+        private readonly string language;
         private IntPtr db = IntPtr.Zero;
         private static IntPtr libraryHandle = IntPtr.Zero;
 
-        public VectorDatabaseService(IMonitor monitor, string modDirectory)
+        /// <summary>Gets the name of the database file being used.</summary>
+        public string DatabaseName => this.databaseName;
+
+        /// <summary>Gets the language code for the database.</summary>
+        public string Language => this.language;
+
+        public VectorDatabaseService(IMonitor monitor, string modDirectory, string language = "en")
         {
             this.monitor = monitor;
-            this.databasePath = Path.Combine(modDirectory, "knowledge.db");
+            this.language = language;
+            this.databaseName = language == "zh" ? "knowledge_cn.db" : "knowledge_en.db";
+            this.databasePath = Path.Combine(modDirectory, this.databaseName);
+            this.monitor.Log($"Using database: {this.databaseName} for language: {language}", LogLevel.Info);
         }
 
         /// <summary>Initialize the database connection.</summary>
@@ -166,7 +177,7 @@ namespace StardewGPT.Services
 
             try
             {
-                this.monitor.Log($"Searching vector database for top {topK} results", LogLevel.Debug);
+                this.monitor.Log($"[Vector Search] Database: {this.databaseName} | Language: {this.language} | Top K: {topK}", LogLevel.Info);
 
                 var results = new List<VectorSearchResult>();
 
@@ -223,7 +234,14 @@ namespace StardewGPT.Services
                     .Take(topK)
                     .ToList();
 
-                this.monitor.Log($"Found {topResults.Count} results, top similarity: {topResults.FirstOrDefault()?.Similarity:F4}", LogLevel.Debug);
+                if (topResults.Count > 0)
+                {
+                    this.monitor.Log($"[Vector Search] Found {topResults.Count} results | Top similarity: {topResults[0].Similarity:F4} | Top result: {topResults[0].Title}", LogLevel.Info);
+                }
+                else
+                {
+                    this.monitor.Log($"[Vector Search] No results found", LogLevel.Warn);
+                }
 
                 return topResults;
             }

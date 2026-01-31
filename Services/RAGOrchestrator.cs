@@ -43,7 +43,7 @@ namespace StardewGPT.Services
         {
             try
             {
-                this.monitor.Log($"Processing question: {question}", LogLevel.Debug);
+                this.monitor.Log($"[Query] User question: {question}", LogLevel.Info);
 
                 // Retrieve relevant context
                 string context = await this.RetrieveContextAsync(question);
@@ -116,11 +116,12 @@ namespace StardewGPT.Services
                 }
 
                 // Get query embedding from Cloudflare Workers AI
-                this.monitor.Log("Getting query embedding from Cloudflare Workers AI...", LogLevel.Debug);
+                this.monitor.Log("[Embedding] Generating query embedding from Cloudflare Workers AI...", LogLevel.Info);
                 float[] queryVector = await this.embeddingClient.GetQueryEmbeddingAsync(question);
+                this.monitor.Log($"[Embedding] Generated {queryVector.Length}-dimensional vector", LogLevel.Info);
 
                 // Search vector database for similar content
-                this.monitor.Log("Searching vector database...", LogLevel.Debug);
+                this.monitor.Log("[Vector Search] Searching for relevant wiki content...", LogLevel.Info);
                 var searchResults = this.vectorDatabase.Search(queryVector, topK: 3);
 
                 if (searchResults.Count > 0)
@@ -131,9 +132,14 @@ namespace StardewGPT.Services
                         contextBuilder.AppendLine($"\n{result.Title} (Similarity: {result.Similarity:F4}):");
                         contextBuilder.AppendLine(result.Content);
                     }
+                    this.monitor.Log($"[Context] Retrieved {searchResults.Count} wiki articles", LogLevel.Info);
+                }
+                else
+                {
+                    this.monitor.Log($"[Context] No relevant wiki articles found", LogLevel.Warn);
                 }
 
-                this.monitor.Log($"Retrieved context length: {contextBuilder.Length} characters", LogLevel.Debug);
+                this.monitor.Log($"[Context] Total context length: {contextBuilder.Length} characters", LogLevel.Info);
             }
             catch (Exception ex)
             {
