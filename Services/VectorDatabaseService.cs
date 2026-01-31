@@ -20,24 +20,13 @@ namespace StardewGPT.Services
     {
         private readonly IMonitor monitor;
         private readonly string databasePath;
-        private readonly string databaseName;
-        private readonly string language;
         private IntPtr db = IntPtr.Zero;
         private static IntPtr libraryHandle = IntPtr.Zero;
 
-        /// <summary>Gets the name of the database file being used.</summary>
-        public string DatabaseName => this.databaseName;
-
-        /// <summary>Gets the language code for the database.</summary>
-        public string Language => this.language;
-
-        public VectorDatabaseService(IMonitor monitor, string modDirectory, string language = "en")
+        public VectorDatabaseService(IMonitor monitor, string modDirectory)
         {
             this.monitor = monitor;
-            this.language = language;
-            this.databaseName = language == "zh" ? "knowledge_cn.db" : "knowledge_en.db";
-            this.databasePath = Path.Combine(modDirectory, this.databaseName);
-            this.monitor.Log($"Using database: {this.databaseName} for language: {language}", LogLevel.Info);
+            this.databasePath = Path.Combine(modDirectory, "knowledge.db");
         }
 
         /// <summary>Initialize the database connection.</summary>
@@ -69,35 +58,42 @@ namespace StardewGPT.Services
                     throw new Exception($"Failed to open database: {rc} - {error}");
                 }
 
-                // Verify database structure
-                IntPtr stmt;
-                rc = SQLiteNative.sqlite3_prepare_v2(
-                    this.db,
-                    "SELECT COUNT(*) FROM wiki_data",
-                    -1,
-                    out stmt,
-                    IntPtr.Zero);
-
-                if (rc != SQLiteNative.SQLITE_OK)
-                {
-                    string error = SQLiteNative.PtrToStringUTF8(SQLiteNative.sqlite3_errmsg(this.db));
-                    throw new Exception($"Failed to prepare statement: {rc} - {error}");
-                }
-
-                rc = SQLiteNative.sqlite3_step(stmt);
-                if (rc == SQLiteNative.SQLITE_ROW)
-                {
-                    long count = SQLiteNative.sqlite3_column_int64(stmt, 0);
-                    this.monitor.Log($"Vector database initialized with {count} records", LogLevel.Info);
-                }
-
-                SQLiteNative.sqlite3_finalize(stmt);
+                // Get record count
+                long count = this.GetRecordCount(this.db);
+                this.monitor.Log($"Vector database (knowledge.db) initialized with {count} records", LogLevel.Info);
             }
             catch (Exception ex)
             {
                 this.monitor.Log($"Error initializing vector database: {ex.Message}", LogLevel.Error);
                 throw;
             }
+        }
+
+        /// <summary>Get record count from the database.</summary>
+        private long GetRecordCount(IntPtr db)
+        {
+            IntPtr stmt;
+            int rc = SQLiteNative.sqlite3_prepare_v2(
+                db,
+                "SELECT COUNT(*) FROM wiki_data",
+                -1,
+                out stmt,
+                IntPtr.Zero);
+
+            if (rc != SQLiteNative.SQLITE_OK)
+            {
+                return 0;
+            }
+
+            long count = 0;
+            rc = SQLiteNative.sqlite3_step(stmt);
+            if (rc == SQLiteNative.SQLITE_ROW)
+            {
+                count = SQLiteNative.sqlite3_column_int64(stmt, 0);
+            }
+
+            SQLiteNative.sqlite3_finalize(stmt);
+            return count;
         }
 
         /// <summary>Load the native SQLite library.</summary>
@@ -177,7 +173,7 @@ namespace StardewGPT.Services
 
             try
             {
-                this.monitor.Log($"[Vector Search] Database: {this.databaseName} | Language: {this.language} | Top K: {topK}", LogLevel.Info);
+                this.monitor.Log($"[Vector Search] Searching merged database (EN+CN) | Top K: {topK}", LogLevel.Info);
 
                 var results = new List<VectorSearchResult>();
 
