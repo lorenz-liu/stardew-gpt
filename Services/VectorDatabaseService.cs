@@ -1,8 +1,8 @@
 using System;
 using System.Collections.Generic;
-using System.Data.SQLite;
 using System.IO;
 using System.Linq;
+using System.Runtime.InteropServices;
 using StardewModdingAPI;
 
 namespace StardewGPT.Services
@@ -20,7 +20,8 @@ namespace StardewGPT.Services
     {
         private readonly IMonitor monitor;
         private readonly string databasePath;
-        private SQLiteConnection? connection;
+        private IntPtr db = IntPtr.Zero;
+        private static IntPtr libraryHandle = IntPtr.Zero;
 
         public VectorDatabaseService(IMonitor monitor, string modDirectory)
         {
@@ -38,16 +39,48 @@ namespace StardewGPT.Services
                     throw new FileNotFoundException($"Vector database not found at: {this.databasePath}");
                 }
 
-                string connectionString = $"Data Source={this.databasePath};Version=3;Read Only=True;";
-                this.connection = new SQLiteConnection(connectionString);
-                this.connection.Open();
+                // Load native library if not already loaded
+                if (libraryHandle == IntPtr.Zero)
+                {
+                    this.LoadNativeLibrary();
+                }
+
+                // Open database
+                int rc = SQLiteNative.sqlite3_open_v2(
+                    this.databasePath,
+                    out this.db,
+                    SQLiteNative.SQLITE_OPEN_READONLY,
+                    IntPtr.Zero);
+
+                if (rc != SQLiteNative.SQLITE_OK)
+                {
+                    string error = SQLiteNative.PtrToStringUTF8(SQLiteNative.sqlite3_errmsg(this.db));
+                    throw new Exception($"Failed to open database: {rc} - {error}");
+                }
 
                 // Verify database structure
-                using (var cmd = new SQLiteCommand("SELECT COUNT(*) FROM wiki_data", this.connection))
+                IntPtr stmt;
+                rc = SQLiteNative.sqlite3_prepare_v2(
+                    this.db,
+                    "SELECT COUNT(*) FROM wiki_data",
+                    -1,
+                    out stmt,
+                    IntPtr.Zero);
+
+                if (rc != SQLiteNative.SQLITE_OK)
                 {
-                    long count = (long)cmd.ExecuteScalar();
+                    string error = SQLiteNative.PtrToStringUTF8(SQLiteNative.sqlite3_errmsg(this.db));
+                    throw new Exception($"Failed to prepare statement: {rc} - {error}");
+                }
+
+                rc = SQLiteNative.sqlite3_step(stmt);
+                if (rc == SQLiteNative.SQLITE_ROW)
+                {
+                    long count = SQLiteNative.sqlite3_column_int64(stmt, 0);
                     this.monitor.Log($"Vector database initialized with {count} records", LogLevel.Info);
                 }
+
+                SQLiteNative.sqlite3_finalize(stmt);
             }
             catch (Exception ex)
             {
@@ -56,13 +89,72 @@ namespace StardewGPT.Services
             }
         }
 
+        /// <summary>Load the native SQLite library.</summary>
+        private void LoadNativeLibrary()
+        {
+            try
+            {
+                string modDirectory = Path.GetDirectoryName(this.databasePath)!;
+                string runtimesPath = Path.Combine(modDirectory, "runtimes");
+                string libraryPath = "";
+
+                if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+                {
+                    string arch = RuntimeInformation.ProcessArchitecture == Architecture.Arm64 ? "arm64" : "x64";
+                    libraryPath = Path.Combine(runtimesPath, $"osx-{arch}", "native", "libe_sqlite3.dylib");
+
+                    if (!File.Exists(libraryPath))
+                    {
+                        libraryPath = Path.Combine(runtimesPath, "osx-x64", "native", "libe_sqlite3.dylib");
+                    }
+                }
+                else if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                {
+                    string arch = Environment.Is64BitProcess ? "x64" : "x86";
+                    libraryPath = Path.Combine(runtimesPath, $"win-{arch}", "native", "e_sqlite3.dll");
+                }
+                else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+                {
+                    libraryPath = Path.Combine(runtimesPath, "linux-x64", "native", "libe_sqlite3.so");
+                }
+
+                if (!File.Exists(libraryPath))
+                {
+                    throw new FileNotFoundException($"Native SQLite library not found at: {libraryPath}");
+                }
+
+                this.monitor.Log($"Loading native SQLite library from: {libraryPath}", LogLevel.Debug);
+
+                // Set up DllImport resolver before loading
+                NativeLibrary.SetDllImportResolver(typeof(SQLiteNative).Assembly, (libraryName, assembly, searchPath) =>
+                {
+                    if (libraryName == "sqlite3")
+                    {
+                        if (libraryHandle == IntPtr.Zero)
+                        {
+                            libraryHandle = NativeLibrary.Load(libraryPath);
+                            this.monitor.Log($"Loaded SQLite library: {libraryPath}", LogLevel.Info);
+                        }
+                        return libraryHandle;
+                    }
+                    return IntPtr.Zero;
+                });
+
+                // Trigger the resolver by calling a SQLite function
+                libraryHandle = NativeLibrary.Load(libraryPath);
+                this.monitor.Log("Native SQLite library loaded successfully", LogLevel.Info);
+            }
+            catch (Exception ex)
+            {
+                this.monitor.Log($"Error loading native library: {ex.Message}", LogLevel.Error);
+                throw;
+            }
+        }
+
         /// <summary>Search for similar vectors using cosine similarity.</summary>
-        /// <param name="queryVector">The 256-dimensional query vector.</param>
-        /// <param name="topK">Number of top results to return.</param>
-        /// <returns>List of search results ordered by similarity.</returns>
         public List<VectorSearchResult> Search(float[] queryVector, int topK = 3)
         {
-            if (this.connection == null)
+            if (this.db == IntPtr.Zero)
             {
                 throw new InvalidOperationException("Database not initialized. Call Initialize() first.");
             }
@@ -78,33 +170,52 @@ namespace StardewGPT.Services
 
                 var results = new List<VectorSearchResult>();
 
-                // Query all records (we'll compute similarity in-memory)
-                // For large databases, consider using a vector index like FAISS or implementing approximate search
-                string query = "SELECT id, title, content, vector FROM wiki_data";
+                // Prepare query
+                IntPtr stmt;
+                int rc = SQLiteNative.sqlite3_prepare_v2(
+                    this.db,
+                    "SELECT title, content, vector FROM wiki_data",
+                    -1,
+                    out stmt,
+                    IntPtr.Zero);
 
-                using (var cmd = new SQLiteCommand(query, this.connection))
-                using (var reader = cmd.ExecuteReader())
+                if (rc != SQLiteNative.SQLITE_OK)
                 {
-                    while (reader.Read())
-                    {
-                        string title = reader.GetString(1);
-                        string content = reader.GetString(2);
-                        byte[] vectorBytes = (byte[])reader["vector"];
-
-                        // Convert byte array to float array (256 floats = 1024 bytes)
-                        float[] dbVector = ByteArrayToFloatArray(vectorBytes);
-
-                        // Calculate cosine similarity
-                        double similarity = CosineSimilarity(queryVector, dbVector);
-
-                        results.Add(new VectorSearchResult
-                        {
-                            Title = title,
-                            Content = content,
-                            Similarity = similarity
-                        });
-                    }
+                    string error = SQLiteNative.PtrToStringUTF8(SQLiteNative.sqlite3_errmsg(this.db));
+                    throw new Exception($"Failed to prepare query: {rc} - {error}");
                 }
+
+                // Iterate through results
+                while (SQLiteNative.sqlite3_step(stmt) == SQLiteNative.SQLITE_ROW)
+                {
+                    string title = SQLiteNative.PtrToStringUTF8(SQLiteNative.sqlite3_column_text(stmt, 0));
+                    string content = SQLiteNative.PtrToStringUTF8(SQLiteNative.sqlite3_column_text(stmt, 1));
+
+                    // Get vector blob
+                    IntPtr blobPtr = SQLiteNative.sqlite3_column_blob(stmt, 2);
+                    int blobSize = SQLiteNative.sqlite3_column_bytes(stmt, 2);
+
+                    if (blobSize != 1024) // 256 floats * 4 bytes
+                    {
+                        continue;
+                    }
+
+                    // Convert to float array
+                    float[] dbVector = new float[256];
+                    Marshal.Copy(blobPtr, dbVector, 0, 256);
+
+                    // Calculate cosine similarity
+                    double similarity = CosineSimilarity(queryVector, dbVector);
+
+                    results.Add(new VectorSearchResult
+                    {
+                        Title = title,
+                        Content = content,
+                        Similarity = similarity
+                    });
+                }
+
+                SQLiteNative.sqlite3_finalize(stmt);
 
                 // Sort by similarity (descending) and take top K
                 var topResults = results
@@ -121,19 +232,6 @@ namespace StardewGPT.Services
                 this.monitor.Log($"Error searching vector database: {ex.Message}", LogLevel.Error);
                 throw;
             }
-        }
-
-        /// <summary>Convert byte array to float array.</summary>
-        private static float[] ByteArrayToFloatArray(byte[] bytes)
-        {
-            if (bytes.Length != 1024) // 256 floats * 4 bytes per float
-            {
-                throw new ArgumentException($"Expected 1024 bytes, got {bytes.Length}");
-            }
-
-            float[] floats = new float[256];
-            Buffer.BlockCopy(bytes, 0, floats, 0, 1024);
-            return floats;
         }
 
         /// <summary>Calculate cosine similarity between two vectors.</summary>
@@ -169,11 +267,10 @@ namespace StardewGPT.Services
         /// <summary>Close the database connection.</summary>
         public void Dispose()
         {
-            if (this.connection != null)
+            if (this.db != IntPtr.Zero)
             {
-                this.connection.Close();
-                this.connection.Dispose();
-                this.connection = null;
+                SQLiteNative.sqlite3_close(this.db);
+                this.db = IntPtr.Zero;
                 this.monitor.Log("Vector database connection closed", LogLevel.Debug);
             }
         }
