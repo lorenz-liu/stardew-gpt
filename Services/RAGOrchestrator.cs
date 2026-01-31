@@ -115,8 +115,8 @@ namespace StardewGPT.Services
                     contextBuilder.AppendLine();
                 }
 
-                // Get query embedding from Jina API
-                this.monitor.Log("Getting query embedding from Jina API...", LogLevel.Debug);
+                // Get query embedding from Cloudflare Workers AI
+                this.monitor.Log("Getting query embedding from Cloudflare Workers AI...", LogLevel.Debug);
                 float[] queryVector = await this.embeddingClient.GetQueryEmbeddingAsync(question);
 
                 // Search vector database for similar content

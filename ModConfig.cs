@@ -5,17 +5,17 @@ namespace StardewGPT
     /// <summary>The mod configuration.</summary>
     public class ModConfig
     {
-        /// <summary>The API endpoint.</summary>
-        public string ApiEndpoint { get; set; } = "https://api.groq.com/openai/v1/chat/completions";
+        /// <summary>The Cloudflare account ID.</summary>
+        public string CloudflareAccountId { get; set; } = "your-cloudflare-account-id";
 
-        /// <summary>The API key.</summary>
-        public string ApiKey { get; set; } = "your-api-key-here";
+        /// <summary>The Cloudflare API token (used for both LLM and embeddings).</summary>
+        public string ApiKey { get; set; } = "your-cloudflare-api-token";
 
-        /// <summary>The Jina AI API key for embeddings.</summary>
-        public string JinaApiKey { get; set; } = "your-jina-api-key-here";
+        /// <summary>The API endpoint for chat completions.</summary>
+        public string ApiEndpoint { get; set; } = "https://api.cloudflare.com/client/v4/accounts/{account_id}/ai/run/@cf/meta/llama-3.1-8b-instruct";
 
-        /// <summary>The model to use.</summary>
-        public string Model { get; set; } = "openai/gpt-oss-120b";
+        /// <summary>The model to use for chat completions.</summary>
+        public string Model { get; set; } = "@cf/meta/llama-3.1-8b-instruct";
 
         /// <summary>Maximum tokens for response.</summary>
         public int MaxTokens { get; set; } = 800;

@@ -8,14 +8,12 @@ using StardewModdingAPI;
 
 namespace StardewGPT.Services
 {
-    /// <summary>Client for Jina AI Embedding API.</summary>
+    /// <summary>Client for Cloudflare Workers AI Embedding API.</summary>
     public class EmbeddingClient
     {
         private readonly HttpClient httpClient;
         private readonly ModConfig config;
         private readonly IMonitor monitor;
-
-        private const string JINA_API_URL = "https://api.jina.ai/v1/embeddings";
 
         public EmbeddingClient(ModConfig config, IMonitor monitor)
         {
@@ -27,11 +25,10 @@ namespace StardewGPT.Services
             };
         }
 
-        /// <summary>Get embedding vector from Jina API.</summary>
+        /// <summary>Get embedding vector from Cloudflare Workers AI.</summary>
         /// <param name="text">The text to embed.</param>
-        /// <param name="taskType">Task type: "retrieval.query" or "retrieval.passage".</param>
-        /// <returns>1024-dimensional embedding vector.</returns>
-        public async Task<float[]> GetEmbeddingAsync(string text, string taskType = "retrieval.query")
+        /// <returns>768-dimensional embedding vector from bge-base-en-v1.5.</returns>
+        public async Task<float[]> GetEmbeddingAsync(string text)
         {
             try
             {
@@ -40,26 +37,24 @@ namespace StardewGPT.Services
                     throw new ArgumentException("Text cannot be empty", nameof(text));
                 }
 
+                // Cloudflare Workers AI endpoint
+                string embeddingUrl = $"https://api.cloudflare.com/client/v4/accounts/{this.config.CloudflareAccountId}/ai/run/@cf/baai/bge-base-en-v1.5";
+
                 // Prepare request payload
                 var requestBody = new
                 {
-                    model = "jina-embeddings-v3",
-                    task = taskType,
-                    dimensions = 1024,
-                    late_chunking = false,
-                    embedding_type = "float",
-                    input = new[] { text }
+                    text = new[] { text }
                 };
 
                 string jsonRequest = JsonConvert.SerializeObject(requestBody);
-                this.monitor.Log($"Requesting Jina embedding for text (length: {text.Length})", LogLevel.Debug);
+                this.monitor.Log($"Requesting Cloudflare embedding for text (length: {text.Length})", LogLevel.Debug);
 
                 // Create HTTP request
-                var request = new HttpRequestMessage(HttpMethod.Post, JINA_API_URL)
+                var request = new HttpRequestMessage(HttpMethod.Post, embeddingUrl)
                 {
                     Content = new StringContent(jsonRequest, Encoding.UTF8, "application/json")
                 };
-                request.Headers.Add("Authorization", $"Bearer {this.config.JinaApiKey}");
+                request.Headers.Add("Authorization", $"Bearer {this.config.ApiKey}");
 
                 // Send request
                 HttpResponseMessage response = await this.httpClient.SendAsync(request);
@@ -67,44 +62,44 @@ namespace StardewGPT.Services
 
                 if (!response.IsSuccessStatusCode)
                 {
-                    this.monitor.Log($"Jina API error: {response.StatusCode} - {responseContent}", LogLevel.Error);
-                    throw new Exception($"Jina API request failed: {response.StatusCode}");
+                    this.monitor.Log($"Cloudflare API error: {response.StatusCode} - {responseContent}", LogLevel.Error);
+                    throw new Exception($"Cloudflare API request failed: {response.StatusCode}");
                 }
 
                 // Parse response
                 JObject responseJson = JObject.Parse(responseContent);
-                JArray? embeddingArray = responseJson["data"]?[0]?["embedding"] as JArray;
+                JArray? embeddingArray = responseJson["result"]?["data"]?[0] as JArray;
 
-                if (embeddingArray == null || embeddingArray.Count != 1024)
+                if (embeddingArray == null || embeddingArray.Count != 768)
                 {
-                    throw new Exception($"Invalid embedding response: expected 1024 dimensions, got {embeddingArray?.Count ?? 0}");
+                    throw new Exception($"Invalid embedding response: expected 768 dimensions, got {embeddingArray?.Count ?? 0}");
                 }
 
                 // Convert to float array
-                float[] embedding = new float[1024];
-                for (int i = 0; i < 1024; i++)
+                float[] embedding = new float[768];
+                for (int i = 0; i < 768; i++)
                 {
                     embedding[i] = embeddingArray[i].Value<float>();
                 }
 
-                this.monitor.Log("Successfully received Jina embedding", LogLevel.Debug);
+                this.monitor.Log("Successfully received Cloudflare embedding", LogLevel.Debug);
                 return embedding;
             }
             catch (Exception ex)
             {
-                this.monitor.Log($"Error calling Jina API: {ex.Message}", LogLevel.Error);
+                this.monitor.Log($"Error calling Cloudflare API: {ex.Message}", LogLevel.Error);
                 throw;
             }
         }
 
-        /// <summary>Reduce 1024-dimensional vector to 256 dimensions.</summary>
-        /// <param name="fullVector">The full 1024-dimensional vector.</param>
+        /// <summary>Reduce 768-dimensional vector to 256 dimensions.</summary>
+        /// <param name="fullVector">The full 768-dimensional vector.</param>
         /// <returns>Reduced 256-dimensional vector.</returns>
         public float[] ReduceDimensions(float[] fullVector)
         {
-            if (fullVector.Length != 1024)
+            if (fullVector.Length != 768)
             {
-                throw new ArgumentException($"Expected 1024 dimensions, got {fullVector.Length}", nameof(fullVector));
+                throw new ArgumentException($"Expected 768 dimensions, got {fullVector.Length}", nameof(fullVector));
             }
 
             float[] reducedVector = new float[256];
@@ -117,7 +112,7 @@ namespace StardewGPT.Services
         /// <returns>256-dimensional embedding vector.</returns>
         public async Task<float[]> GetQueryEmbeddingAsync(string query)
         {
-            float[] fullVector = await this.GetEmbeddingAsync(query, "retrieval.query");
+            float[] fullVector = await this.GetEmbeddingAsync(query);
             return this.ReduceDimensions(fullVector);
         }
     }

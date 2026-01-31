@@ -51,6 +51,12 @@ namespace StardewGPT
             {
                 this.Monitor.Log("Initializing RAG system...", LogLevel.Info);
 
+                // Replace {account_id} placeholder in API endpoint
+                if (this.Config!.ApiEndpoint.Contains("{account_id}"))
+                {
+                    this.Config.ApiEndpoint = this.Config.ApiEndpoint.Replace("{account_id}", this.Config.CloudflareAccountId);
+                }
+
                 // Create service instances
                 this.aiClient = new AIClient(this.Config!, this.Monitor);
                 this.gameDataExtractor = new GameDataExtractor(this.Monitor);

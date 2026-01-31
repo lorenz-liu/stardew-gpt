@@ -1,8 +1,8 @@
 {
-  "ApiEndpoint": "https://api.groq.com/openai/v1/chat/completions",
-  "ApiKey": "REPLACE_WITH_YOUR_GROQ_API",
-  "JinaApiKey": "REPLACE_WITH_YOUR_JINA_API",
-  "Model": "openai/gpt-oss-120b",
+  "CloudflareAccountId": "YOUR_CLOUDFLARE_ACCOUNT_ID",
+  "ApiKey": "YOUR_CLOUDFLARE_API_TOKEN",
+  "ApiEndpoint": "https://api.cloudflare.com/client/v4/accounts/{account_id}/ai/run/@cf/meta/llama-3.1-8b-instruct",
+  "Model": "@cf/meta/llama-3.1-8b-instruct",
   "MaxTokens": 800,
   "Temperature": 0.3,
   "OpenChatKey": "K"
