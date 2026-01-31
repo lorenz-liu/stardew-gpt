@@ -80,6 +80,12 @@ namespace StardewGPT.Services
                 this.monitor.Log($"API Response Status: {response.StatusCode}", LogLevel.Debug);
                 this.monitor.Log($"API Response Content (first 500 chars): {responseContent.Substring(0, Math.Min(500, responseContent.Length))}", LogLevel.Debug);
 
+                // Log full response for debugging (especially for new models)
+                if (responseContent.Length <= 2000)
+                {
+                    this.monitor.Log($"Full API Response: {responseContent}", LogLevel.Debug);
+                }
+
                 if (!response.IsSuccessStatusCode)
                 {
                     this.monitor.Log($"API error: {response.StatusCode} - {responseContent}", LogLevel.Error);
@@ -110,18 +116,55 @@ namespace StardewGPT.Services
                 // Parse response
                 JObject responseJson = JObject.Parse(responseContent);
 
-                // Try Cloudflare Workers AI format first: result.response
-                string? aiResponse = responseJson["result"]?["response"]?.ToString();
+                // Try multiple response formats
+                string? aiResponse = null;
 
-                // Fallback to OpenAI format: choices[0].message.content
+                // Format 1: Cloudflare Workers AI format: result.response
+                aiResponse = responseJson["result"]?["response"]?.ToString();
+
+                // Format 2: OpenAI-compatible format nested in result: result.choices[0].message.content
+                if (string.IsNullOrEmpty(aiResponse))
+                {
+                    aiResponse = responseJson["result"]?["choices"]?[0]?["message"]?["content"]?.ToString();
+                }
+
+                // Format 3: OpenAI format: choices[0].message.content
                 if (string.IsNullOrEmpty(aiResponse))
                 {
                     aiResponse = responseJson["choices"]?[0]?["message"]?["content"]?.ToString();
                 }
 
+                // Format 4: Direct response field
+                if (string.IsNullOrEmpty(aiResponse))
+                {
+                    aiResponse = responseJson["response"]?.ToString();
+                }
+
+                // Format 5: Result.text or result.generated_text
+                if (string.IsNullOrEmpty(aiResponse))
+                {
+                    aiResponse = responseJson["result"]?["text"]?.ToString();
+                }
+
+                if (string.IsNullOrEmpty(aiResponse))
+                {
+                    aiResponse = responseJson["result"]?["generated_text"]?.ToString();
+                }
+
+                // Format 6: Text field directly
+                if (string.IsNullOrEmpty(aiResponse))
+                {
+                    aiResponse = responseJson["text"]?.ToString();
+                }
+
                 if (string.IsNullOrEmpty(aiResponse))
                 {
                     this.monitor.Log($"Could not find response in API output. Full response: {responseContent}", LogLevel.Error);
+                    this.monitor.Log($"Response JSON keys: {string.Join(", ", responseJson.Properties().Select(p => p.Name))}", LogLevel.Error);
+                    if (responseJson["result"] != null)
+                    {
+                        this.monitor.Log($"Result keys: {string.Join(", ", ((JObject)responseJson["result"]!).Properties().Select(p => p.Name))}", LogLevel.Error);
+                    }
                     throw new Exception("Empty response from API");
                 }
 
@@ -194,6 +237,14 @@ namespace StardewGPT.Services
                 HttpResponseMessage response = await this.httpClient.SendAsync(request);
                 string responseContent = await response.Content.ReadAsStringAsync();
 
+                this.monitor.Log($"API Response Status: {response.StatusCode}", LogLevel.Debug);
+
+                // Log full response for debugging (especially for new models)
+                if (responseContent.Length <= 2000)
+                {
+                    this.monitor.Log($"Full API Response: {responseContent}", LogLevel.Debug);
+                }
+
                 if (!response.IsSuccessStatusCode)
                 {
                     this.monitor.Log($"API error: {response.StatusCode} - {responseContent}", LogLevel.Error);
@@ -224,18 +275,55 @@ namespace StardewGPT.Services
                 // Parse response
                 JObject responseJson = JObject.Parse(responseContent);
 
-                // Try Cloudflare Workers AI format first: result.response
-                string? aiResponse = responseJson["result"]?["response"]?.ToString();
+                // Try multiple response formats
+                string? aiResponse = null;
 
-                // Fallback to OpenAI format: choices[0].message.content
+                // Format 1: Cloudflare Workers AI format: result.response
+                aiResponse = responseJson["result"]?["response"]?.ToString();
+
+                // Format 2: OpenAI-compatible format nested in result: result.choices[0].message.content
+                if (string.IsNullOrEmpty(aiResponse))
+                {
+                    aiResponse = responseJson["result"]?["choices"]?[0]?["message"]?["content"]?.ToString();
+                }
+
+                // Format 3: OpenAI format: choices[0].message.content
                 if (string.IsNullOrEmpty(aiResponse))
                 {
                     aiResponse = responseJson["choices"]?[0]?["message"]?["content"]?.ToString();
                 }
 
+                // Format 4: Direct response field
+                if (string.IsNullOrEmpty(aiResponse))
+                {
+                    aiResponse = responseJson["response"]?.ToString();
+                }
+
+                // Format 5: Result.text or result.generated_text
+                if (string.IsNullOrEmpty(aiResponse))
+                {
+                    aiResponse = responseJson["result"]?["text"]?.ToString();
+                }
+
+                if (string.IsNullOrEmpty(aiResponse))
+                {
+                    aiResponse = responseJson["result"]?["generated_text"]?.ToString();
+                }
+
+                // Format 6: Text field directly
+                if (string.IsNullOrEmpty(aiResponse))
+                {
+                    aiResponse = responseJson["text"]?.ToString();
+                }
+
                 if (string.IsNullOrEmpty(aiResponse))
                 {
                     this.monitor.Log($"Could not find response in API output", LogLevel.Error);
+                    this.monitor.Log($"Response JSON keys: {string.Join(", ", responseJson.Properties().Select(p => p.Name))}", LogLevel.Error);
+                    if (responseJson["result"] != null)
+                    {
+                        this.monitor.Log($"Result keys: {string.Join(", ", ((JObject)responseJson["result"]!).Properties().Select(p => p.Name))}", LogLevel.Error);
+                    }
                     throw new Exception("Empty response from API");
                 }
 
