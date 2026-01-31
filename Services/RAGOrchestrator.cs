@@ -12,7 +12,8 @@ namespace StardewGPT.Services
     {
         private readonly AIClient aiClient;
         private readonly GameDataExtractor gameDataExtractor;
-        private readonly LocalKnowledgeLoader localKnowledgeLoader;
+        private readonly EmbeddingClient embeddingClient;
+        private readonly VectorDatabaseService vectorDatabase;
         private readonly ChatHistoryManager chatHistoryManager;
         private readonly IMonitor monitor;
         private readonly ITranslationHelper i18n;
@@ -20,14 +21,16 @@ namespace StardewGPT.Services
         public RAGOrchestrator(
             AIClient aiClient,
             GameDataExtractor gameDataExtractor,
-            LocalKnowledgeLoader localKnowledgeLoader,
+            EmbeddingClient embeddingClient,
+            VectorDatabaseService vectorDatabase,
             ChatHistoryManager chatHistoryManager,
             IMonitor monitor,
             ITranslationHelper i18n)
         {
             this.aiClient = aiClient;
             this.gameDataExtractor = gameDataExtractor;
-            this.localKnowledgeLoader = localKnowledgeLoader;
+            this.embeddingClient = embeddingClient;
+            this.vectorDatabase = vectorDatabase;
             this.chatHistoryManager = chatHistoryManager;
             this.monitor = monitor;
             this.i18n = i18n;
@@ -112,13 +115,22 @@ namespace StardewGPT.Services
                     contextBuilder.AppendLine();
                 }
 
-                // Search local knowledge base for relevant information
-                this.monitor.Log("Searching local knowledge base...", LogLevel.Debug);
-                var knowledgeEntries = await this.localKnowledgeLoader.SearchAsync(question, maxResults: 3);
-                if (knowledgeEntries.Count > 0)
+                // Get query embedding from Jina API
+                this.monitor.Log("Getting query embedding from Jina API...", LogLevel.Debug);
+                float[] queryVector = await this.embeddingClient.GetQueryEmbeddingAsync(question);
+
+                // Search vector database for similar content
+                this.monitor.Log("Searching vector database...", LogLevel.Debug);
+                var searchResults = this.vectorDatabase.Search(queryVector, topK: 3);
+
+                if (searchResults.Count > 0)
                 {
-                    string knowledgeContext = this.localKnowledgeLoader.GetFormattedContext(knowledgeEntries);
-                    contextBuilder.AppendLine(knowledgeContext);
+                    contextBuilder.AppendLine("=== STARDEW VALLEY KNOWLEDGE BASE ===");
+                    foreach (var result in searchResults)
+                    {
+                        contextBuilder.AppendLine($"\n{result.Title} (Similarity: {result.Similarity:F4}):");
+                        contextBuilder.AppendLine(result.Content);
+                    }
                 }
 
                 this.monitor.Log($"Retrieved context length: {contextBuilder.Length} characters", LogLevel.Debug);

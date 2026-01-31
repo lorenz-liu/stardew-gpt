@@ -9,6 +9,7 @@
 
   <ItemGroup>
     <PackageReference Include="Pathoschild.Stardew.ModBuildConfig" Version="4.1.1" />
+    <PackageReference Include="System.Data.SQLite.Core" Version="1.0.118" />
   </ItemGroup>
 
   <ItemGroup>
@@ -26,12 +27,8 @@
     <None Include="README.md">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-  </ItemGroup>
-
-  <ItemGroup>
-    <None Include="KnowledgeBase\**\*">
+    <None Include="knowledge.db">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-      <Link>KnowledgeBase\%(RecursiveDir)%(Filename)%(Extension)</Link>
     </None>
   </ItemGroup>
 </Project>

@@ -1,5 +1,0 @@
-# HMTGF
-
-Redirect to:
-
-* [??HMTGF??](/%3F%3FHMTGF%3F%3F "??HMTGF??")

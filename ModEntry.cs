@@ -19,7 +19,8 @@ namespace StardewGPT
 
         private AIClient? aiClient;
         private GameDataExtractor? gameDataExtractor;
-        private LocalKnowledgeLoader? localKnowledgeLoader;
+        private EmbeddingClient? embeddingClient;
+        private VectorDatabaseService? vectorDatabase;
         private ChatHistoryManager? chatHistoryManager;
 
         /// <summary>The mod entry point, called after the mod is first loaded.</summary>
@@ -53,14 +54,19 @@ namespace StardewGPT
                 // Create service instances
                 this.aiClient = new AIClient(this.Config!, this.Monitor);
                 this.gameDataExtractor = new GameDataExtractor(this.Monitor);
-                this.localKnowledgeLoader = new LocalKnowledgeLoader(this.Monitor, this.Helper.DirectoryPath);
+                this.embeddingClient = new EmbeddingClient(this.Config!, this.Monitor);
+                this.vectorDatabase = new VectorDatabaseService(this.Monitor, this.Helper.DirectoryPath);
                 this.chatHistoryManager = new ChatHistoryManager(this.Helper.DirectoryPath, this.Monitor);
+
+                // Initialize vector database
+                this.vectorDatabase.Initialize();
 
                 // Create RAG orchestrator
                 RagOrchestrator = new RAGOrchestrator(
                     this.aiClient,
                     this.gameDataExtractor,
-                    this.localKnowledgeLoader,
+                    this.embeddingClient,
+                    this.vectorDatabase,
                     this.chatHistoryManager,
                     this.Monitor,
                     this.Helper.Translation
@@ -77,18 +83,9 @@ namespace StardewGPT
         /// <summary>Raised after the player loads a save.</summary>
         private async void OnSaveLoaded(object? sender, SaveLoadedEventArgs e)
         {
-            try
-            {
-                // Initialize local knowledge base asynchronously
-                if (this.localKnowledgeLoader != null)
-                {
-                    await this.localKnowledgeLoader.InitializeAsync();
-                }
-            }
-            catch (System.Exception ex)
-            {
-                this.Monitor.Log($"Error loading knowledge base: {ex.Message}", LogLevel.Error);
-            }
+            // Vector database is already initialized in InitializeRAGSystem
+            // No additional async initialization needed
+            this.Monitor.Log("Save loaded, RAG system ready", LogLevel.Debug);
         }
 
         /// <summary>Raised after the player presses a button on the keyboard, controller, or mouse.</summary>

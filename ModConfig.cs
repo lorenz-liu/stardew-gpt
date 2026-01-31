@@ -11,6 +11,9 @@ namespace StardewGPT
         /// <summary>The API key.</summary>
         public string ApiKey { get; set; } = "your-api-key-here";
 
+        /// <summary>The Jina AI API key for embeddings.</summary>
+        public string JinaApiKey { get; set; } = "your-jina-api-key-here";
+
         /// <summary>The model to use.</summary>
         public string Model { get; set; } = "openai/gpt-oss-120b";
 
