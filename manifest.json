@@ -1,7 +1,7 @@
 {
   "Name": "StardewGPT",
   "Author": "Lorenz Liu",
-  "Version": "1.1.1",
+  "Version": "1.1.2",
   "Description": "An in-game ChatGPT-like chatbot for Stardew Valley, built with the latest foundational model and a contextual knowledge base of the game and your game stats. ",
   "UniqueID": "LorenzLiu.StardewGPT",
   "EntryDll": "StardewGPT.dll",
