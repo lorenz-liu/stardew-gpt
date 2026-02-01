@@ -29,7 +29,8 @@ StardewGPT is an in-game AI assistant for Stardew Valley, built with vector-base
 3. **Create an API Token**:
    - Go to [API Tokens](https://dash.cloudflare.com/profile/api-tokens)
    - Click "Create Token"
-   - Use the "Edit Cloudflare Workers" template or create a custom token with "Workers AI" permissions
+   - Use the "Workers AI" template or create a custom token with "Workers AI" permissions
+   - If using the "Workers AI" template, there is no need to modify anything
    - Copy the token (you won't be able to see it again!)
 
 **Why Cloudflare?**
@@ -117,7 +118,8 @@ StardewGPT 是《星露谷物语》的游戏内 AI 助手，基于向量语义�
 3. **创建 API 令牌**：
    - 进入 [API Tokens](https://dash.cloudflare.com/profile/api-tokens)
    - 点击 "Create Token"（创建令牌）
-   - 使用 "Edit Cloudflare Workers" 模板或创建具有 "Workers AI" 权限的自定义令牌
+   - 使用 "Workers AI" 模板或创建具有 "Workers AI" 权限的自定义令牌
+    - 如果使用 "Workers AI" 模板，无需修改其任何内容
    - 复制令牌（之后无法再次查看！）
 
 **为什么选择 Cloudflare？**
