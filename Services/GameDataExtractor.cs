@@ -22,23 +22,6 @@ namespace StardewGPT.Services
             this.monitor = monitor;
         }
 
-        /// <summary>Get a description of the current weather.</summary>
-        private string GetWeatherDescription()
-        {
-            if (Game1.isRaining)
-            {
-                if (Game1.isLightning)
-                    return "Stormy";
-                return "Rainy";
-            }
-            if (Game1.isSnowing)
-                return "Snowy";
-            if (Game1.isDebrisWeather)
-                return "Windy";
-
-            return "Sunny";
-        }
-
         /// <summary>Extract specific data based on the user's question.</summary>
         /// <param name="question">The user's question.</param>
         /// <returns>Relevant game data for the question.</returns>

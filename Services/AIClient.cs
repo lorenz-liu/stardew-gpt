@@ -34,6 +34,124 @@ namespace StardewGPT.Services
             };
         }
 
+        /// <summary>Check for API errors and throw appropriate exceptions.</summary>
+        private void CheckForApiErrors(HttpResponseMessage response, string responseContent)
+        {
+            if (response.IsSuccessStatusCode)
+                return;
+
+            this.monitor.Log($"API error: {response.StatusCode} - {responseContent}", LogLevel.Error);
+
+            // Check for invalid API key error (401 Unauthorized)
+            if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+            {
+                try
+                {
+                    JObject errorJson = JObject.Parse(responseContent);
+                    string? errorCode = errorJson["error"]?["code"]?.ToString();
+                    string? errorType = errorJson["error"]?["type"]?.ToString();
+
+                    if (errorCode == "invalid_api_key" || errorType == "invalid_request_error")
+                    {
+                        throw new InvalidApiKeyException("Invalid API key");
+                    }
+                }
+                catch (JsonException)
+                {
+                    // If JSON parsing fails, fall through to generic error
+                }
+            }
+
+            // Check for Cloudflare-specific errors (404 NotFound with error code 7003)
+            // This indicates invalid account ID or missing Workers AI permissions
+            if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
+            {
+                try
+                {
+                    JObject errorJson = JObject.Parse(responseContent);
+                    JArray? errors = errorJson["errors"] as JArray;
+                    if (errors != null && errors.Count > 0)
+                    {
+                        int? errorCode = errors[0]?["code"]?.Value<int>();
+                        if (errorCode == 7003)
+                        {
+                            throw new InvalidApiKeyException("Invalid Cloudflare configuration");
+                        }
+                    }
+                }
+                catch (JsonException)
+                {
+                    // If JSON parsing fails, fall through to generic error
+                }
+                catch (InvalidApiKeyException)
+                {
+                    throw; // Re-throw InvalidApiKeyException
+                }
+            }
+
+            throw new Exception($"API request failed: {response.StatusCode}");
+        }
+
+        /// <summary>Parse AI response from various API response formats.</summary>
+        private string ParseAiResponse(string responseContent)
+        {
+            JObject responseJson = JObject.Parse(responseContent);
+
+            // Try multiple response formats
+            string? aiResponse = null;
+
+            // Format 1: Cloudflare Workers AI format: result.response
+            aiResponse = responseJson["result"]?["response"]?.ToString();
+
+            // Format 2: OpenAI-compatible format nested in result: result.choices[0].message.content
+            if (string.IsNullOrEmpty(aiResponse))
+            {
+                aiResponse = responseJson["result"]?["choices"]?[0]?["message"]?["content"]?.ToString();
+            }
+
+            // Format 3: OpenAI format: choices[0].message.content
+            if (string.IsNullOrEmpty(aiResponse))
+            {
+                aiResponse = responseJson["choices"]?[0]?["message"]?["content"]?.ToString();
+            }
+
+            // Format 4: Direct response field
+            if (string.IsNullOrEmpty(aiResponse))
+            {
+                aiResponse = responseJson["response"]?.ToString();
+            }
+
+            // Format 5: Result.text or result.generated_text
+            if (string.IsNullOrEmpty(aiResponse))
+            {
+                aiResponse = responseJson["result"]?["text"]?.ToString();
+            }
+
+            if (string.IsNullOrEmpty(aiResponse))
+            {
+                aiResponse = responseJson["result"]?["generated_text"]?.ToString();
+            }
+
+            // Format 6: Text field directly
+            if (string.IsNullOrEmpty(aiResponse))
+            {
+                aiResponse = responseJson["text"]?.ToString();
+            }
+
+            if (string.IsNullOrEmpty(aiResponse))
+            {
+                this.monitor.Log($"Could not find response in API output. Full response: {responseContent}", LogLevel.Error);
+                this.monitor.Log($"Response JSON keys: {string.Join(", ", responseJson.Properties().Select(p => p.Name))}", LogLevel.Error);
+                if (responseJson["result"] != null)
+                {
+                    this.monitor.Log($"Result keys: {string.Join(", ", ((JObject)responseJson["result"]!).Properties().Select(p => p.Name))}", LogLevel.Error);
+                }
+                throw new Exception("Empty response from API");
+            }
+
+            return aiResponse;
+        }
+
         /// <summary>Send a chat completion request to the LLM API.</summary>
         /// <param name="systemPrompt">The system prompt to set context.</param>
         /// <param name="userMessage">The user's message.</param>
@@ -86,114 +204,10 @@ namespace StardewGPT.Services
                     this.monitor.Log($"Full API Response: {responseContent}", LogLevel.Debug);
                 }
 
-                if (!response.IsSuccessStatusCode)
-                {
-                    this.monitor.Log($"API error: {response.StatusCode} - {responseContent}", LogLevel.Error);
-
-                    // Check for invalid API key error (401 Unauthorized)
-                    if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
-                    {
-                        try
-                        {
-                            JObject errorJson = JObject.Parse(responseContent);
-                            string? errorCode = errorJson["error"]?["code"]?.ToString();
-                            string? errorType = errorJson["error"]?["type"]?.ToString();
-
-                            if (errorCode == "invalid_api_key" || errorType == "invalid_request_error")
-                            {
-                                throw new InvalidApiKeyException("Invalid API key");
-                            }
-                        }
-                        catch (JsonException)
-                        {
-                            // If JSON parsing fails, fall through to generic error
-                        }
-                    }
-
-                    // Check for Cloudflare-specific errors (404 NotFound with error code 7003)
-                    // This indicates invalid account ID or missing Workers AI permissions
-                    if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
-                    {
-                        try
-                        {
-                            JObject errorJson = JObject.Parse(responseContent);
-                            JArray? errors = errorJson["errors"] as JArray;
-                            if (errors != null && errors.Count > 0)
-                            {
-                                int? errorCode = errors[0]?["code"]?.Value<int>();
-                                if (errorCode == 7003)
-                                {
-                                    throw new InvalidApiKeyException("Invalid Cloudflare configuration");
-                                }
-                            }
-                        }
-                        catch (JsonException)
-                        {
-                            // If JSON parsing fails, fall through to generic error
-                        }
-                        catch (InvalidApiKeyException)
-                        {
-                            throw; // Re-throw InvalidApiKeyException
-                        }
-                    }
-
-                    throw new Exception($"API request failed: {response.StatusCode}");
-                }
+                this.CheckForApiErrors(response, responseContent);
 
                 // Parse response
-                JObject responseJson = JObject.Parse(responseContent);
-
-                // Try multiple response formats
-                string? aiResponse = null;
-
-                // Format 1: Cloudflare Workers AI format: result.response
-                aiResponse = responseJson["result"]?["response"]?.ToString();
-
-                // Format 2: OpenAI-compatible format nested in result: result.choices[0].message.content
-                if (string.IsNullOrEmpty(aiResponse))
-                {
-                    aiResponse = responseJson["result"]?["choices"]?[0]?["message"]?["content"]?.ToString();
-                }
-
-                // Format 3: OpenAI format: choices[0].message.content
-                if (string.IsNullOrEmpty(aiResponse))
-                {
-                    aiResponse = responseJson["choices"]?[0]?["message"]?["content"]?.ToString();
-                }
-
-                // Format 4: Direct response field
-                if (string.IsNullOrEmpty(aiResponse))
-                {
-                    aiResponse = responseJson["response"]?.ToString();
-                }
-
-                // Format 5: Result.text or result.generated_text
-                if (string.IsNullOrEmpty(aiResponse))
-                {
-                    aiResponse = responseJson["result"]?["text"]?.ToString();
-                }
-
-                if (string.IsNullOrEmpty(aiResponse))
-                {
-                    aiResponse = responseJson["result"]?["generated_text"]?.ToString();
-                }
-
-                // Format 6: Text field directly
-                if (string.IsNullOrEmpty(aiResponse))
-                {
-                    aiResponse = responseJson["text"]?.ToString();
-                }
-
-                if (string.IsNullOrEmpty(aiResponse))
-                {
-                    this.monitor.Log($"Could not find response in API output. Full response: {responseContent}", LogLevel.Error);
-                    this.monitor.Log($"Response JSON keys: {string.Join(", ", responseJson.Properties().Select(p => p.Name))}", LogLevel.Error);
-                    if (responseJson["result"] != null)
-                    {
-                        this.monitor.Log($"Result keys: {string.Join(", ", ((JObject)responseJson["result"]!).Properties().Select(p => p.Name))}", LogLevel.Error);
-                    }
-                    throw new Exception("Empty response from API");
-                }
+                string aiResponse = this.ParseAiResponse(responseContent);
 
                 this.monitor.Log($"Received response from API (length: {aiResponse.Length})", LogLevel.Debug);
                 return aiResponse;
@@ -272,59 +286,7 @@ namespace StardewGPT.Services
                     this.monitor.Log($"Full API Response: {responseContent}", LogLevel.Debug);
                 }
 
-                if (!response.IsSuccessStatusCode)
-                {
-                    this.monitor.Log($"API error: {response.StatusCode} - {responseContent}", LogLevel.Error);
-
-                    // Check for invalid API key error (401 Unauthorized)
-                    if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
-                    {
-                        try
-                        {
-                            JObject errorJson = JObject.Parse(responseContent);
-                            string? errorCode = errorJson["error"]?["code"]?.ToString();
-                            string? errorType = errorJson["error"]?["type"]?.ToString();
-
-                            if (errorCode == "invalid_api_key" || errorType == "invalid_request_error")
-                            {
-                                throw new InvalidApiKeyException("Invalid API key");
-                            }
-                        }
-                        catch (JsonException)
-                        {
-                            // If JSON parsing fails, fall through to generic error
-                        }
-                    }
-
-                    // Check for Cloudflare-specific errors (404 NotFound with error code 7003)
-                    // This indicates invalid account ID or missing Workers AI permissions
-                    if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
-                    {
-                        try
-                        {
-                            JObject errorJson = JObject.Parse(responseContent);
-                            JArray? errors = errorJson["errors"] as JArray;
-                            if (errors != null && errors.Count > 0)
-                            {
-                                int? errorCode = errors[0]?["code"]?.Value<int>();
-                                if (errorCode == 7003)
-                                {
-                                    throw new InvalidApiKeyException("Invalid Cloudflare configuration");
-                                }
-                            }
-                        }
-                        catch (JsonException)
-                        {
-                            // If JSON parsing fails, fall through to generic error
-                        }
-                        catch (InvalidApiKeyException)
-                        {
-                            throw; // Re-throw InvalidApiKeyException
-                        }
-                    }
-
-                    throw new Exception($"API request failed: {response.StatusCode}");
-                }
+                this.CheckForApiErrors(response, responseContent);
 
                 // Parse response
                 JObject responseJson = JObject.Parse(responseContent);

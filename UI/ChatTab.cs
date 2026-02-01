@@ -14,7 +14,7 @@ namespace StardewGPT.UI
     public class ChatTab : IClickableMenu
     {
         private readonly TextBox inputTextBox;
-        private readonly List<ChatMessage> chatHistory;
+        private readonly List<UIChatMessage> chatHistory;
         private readonly ClickableTextureComponent clearHistoryButton;
         private int scrollOffset = 0;
         private bool isWaitingForResponse = false;
@@ -30,7 +30,7 @@ namespace StardewGPT.UI
         public ChatTab(int xPositionOnScreen, int yPositionOnScreen, int width, int height)
             : base(xPositionOnScreen, yPositionOnScreen, width, height, showUpperRightCloseButton: true)
         {
-            this.chatHistory = new List<ChatMessage>();
+            this.chatHistory = new List<UIChatMessage>();
 
             // Create input text box (full width now, no button next to it)
             int inputBoxWidth = width - Padding * 2;
@@ -92,7 +92,7 @@ namespace StardewGPT.UI
                     foreach (var msg in persistedHistory)
                     {
                         bool isUser = msg.Role == "user";
-                        this.chatHistory.Add(new ChatMessage
+                        this.chatHistory.Add(new UIChatMessage
                         {
                             Text = msg.Content,
                             IsUser = isUser,
@@ -120,7 +120,7 @@ namespace StardewGPT.UI
         /// <summary>Add a message to the chat history.</summary>
         private void AddMessage(string text, bool isUser)
         {
-            this.chatHistory.Add(new ChatMessage
+            this.chatHistory.Add(new UIChatMessage
             {
                 Text = text,
                 IsUser = isUser,
@@ -448,7 +448,7 @@ namespace StardewGPT.UI
         }
 
         /// <summary>Calculate message dimensions with caching.</summary>
-        private (string wrappedText, int height, int width) GetMessageDimensions(ChatMessage message, int maxWidth)
+        private (string wrappedText, int height, int width) GetMessageDimensions(UIChatMessage message, int maxWidth)
         {
             // Return cached values if available
             if (message.CachedWrappedText != null && message.CachedMaxWidth == maxWidth)
@@ -488,8 +488,8 @@ namespace StardewGPT.UI
         }
     }
 
-    /// <summary>Represents a chat message.</summary>
-    public class ChatMessage
+    /// <summary>Represents a chat message in the UI.</summary>
+    public class UIChatMessage
     {
         public string Text { get; set; } = "";
         public bool IsUser { get; set; }
