@@ -6,6 +6,6 @@
   "UniqueID": "LorenzLiu.StardewGPT",
   "EntryDll": "StardewGPT.dll",
   "MinimumApiVersion": "3.18.0",
-  "UpdateKeys": [],
+  "UpdateKeys": ["GitHub:lorenz-liu/stardew-gpt", "Nexus:41859"],
   "Dependencies": []
 }
