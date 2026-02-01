@@ -63,6 +63,34 @@ namespace StardewGPT.Services
                 if (!response.IsSuccessStatusCode)
                 {
                     this.monitor.Log($"Cloudflare API error: {response.StatusCode} - {responseContent}", LogLevel.Error);
+
+                    // Check for Cloudflare-specific errors (404 NotFound with error code 7003)
+                    // This indicates invalid account ID or missing Workers AI permissions
+                    if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
+                    {
+                        try
+                        {
+                            JObject errorJson = JObject.Parse(responseContent);
+                            JArray? errors = errorJson["errors"] as JArray;
+                            if (errors != null && errors.Count > 0)
+                            {
+                                int? errorCode = errors[0]?["code"]?.Value<int>();
+                                if (errorCode == 7003)
+                                {
+                                    throw new InvalidApiKeyException("Invalid Cloudflare configuration");
+                                }
+                            }
+                        }
+                        catch (JsonException)
+                        {
+                            // If JSON parsing fails, fall through to generic error
+                        }
+                        catch (InvalidApiKeyException)
+                        {
+                            throw; // Re-throw InvalidApiKeyException
+                        }
+                    }
+
                     throw new Exception($"Cloudflare API request failed: {response.StatusCode}");
                 }
 
